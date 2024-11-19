@@ -1,0 +1,16 @@
+{
+  "editor.tabSize": 2,
+  "[zig]": {
+    "editor.tabSize": 4,
+    "editor.formatOnSave": true,
+    "editor.inlayHints.enabled": "offUnlessPressed",
+    "editor.suggest.insertMode": "replace",
+    "editor.stickyScroll.defaultModel": "foldingProviderModel",
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit",
+    }
+  },
+  "zig.zls.enableBuildOnSave": true,
+  "zig.zls.buildOnSaveStep": "check"
+}
