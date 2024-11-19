@@ -1,0 +1,5 @@
+# System Files
+.DS_Store
+
+# Zig build cache
+.zig-cache
