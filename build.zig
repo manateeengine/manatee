@@ -4,7 +4,7 @@ const std = @import("std");
 // 1. A Zig package that can be used in existing Zig codebase (named "manatee")
 // 2. A static library that can be used in any other language (named "manatee-lib")
 // 3. A game / map editor, compiled to an executable (named "manatee-editor")
-// As a note, the static lib and editor exe will be duplicated in the build script with syffux
+// As a note, the static lib and editor exe will be duplicated in the build script with suffix
 // "_check" in order to get more useful information from ZLS. For more information as to why this
 // is done, see https://zigtools.org/zls/guides/build-on-save
 
