@@ -1,0 +1,6 @@
+# System Files
+.DS_Store
+
+# Zig Output
+.zig-cache
+zig-out

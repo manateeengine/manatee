@@ -1,0 +1,20 @@
+{
+  "cSpell.words": [
+    "deinit"
+  ],
+  "editor.tabSize": 2,
+  // Note, this won't work if using VSCode "workspaces", the repo must be opened directly
+  "zig.buildOnSave": true,
+  "zig.zls.enableBuildOnSave": true,
+  "[zig]": {
+    "editor.tabSize": 4,
+    "editor.formatOnSave": true,
+    "editor.inlayHints.enabled": "offUnlessPressed",
+    "editor.suggest.insertMode": "replace",
+    "editor.stickyScroll.defaultModel": "foldingProviderModel",
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit",
+    },
+  },
+}
