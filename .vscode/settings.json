@@ -1,11 +1,18 @@
 {
+  // Note: a lot of these words are part of the Zig language but not picked up by cSpell. I should
+  // probably make a cSpell PR addressing these at some point in the near future, but adding a few
+  // custom dictionary words here and there works well enough for now
   "cSpell.words": [
-    "deinit"
+    "anyopaque",
+    "comptime",
+    "deinit",
+    "orelse"
   ],
   "editor.tabSize": 2,
   // Note, this won't work if using VSCode "workspaces", the repo must be opened directly
   "zig.buildOnSave": true,
   "zig.zls.enableBuildOnSave": true,
+  "zig.formattingProvider": "extension",
   "[zig]": {
     "editor.tabSize": 4,
     "editor.formatOnSave": true,
@@ -14,7 +21,7 @@
     "editor.stickyScroll.defaultModel": "foldingProviderModel",
     "editor.codeActionsOnSave": {
       "source.fixAll": "explicit",
-      "source.organizeImports": "explicit",
+      "source.organizeImports": "never",
     },
   },
 }

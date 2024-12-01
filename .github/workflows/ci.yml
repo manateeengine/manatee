@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        # As multi-platform support improves, we should add more operating systems here
+        # As multi-platform support improves, I should add more operating systems here
         # os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{matrix.os}}
     steps:
