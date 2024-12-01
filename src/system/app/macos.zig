@@ -2,16 +2,16 @@ const std = @import("std");
 const App = @import("../app.zig").App;
 
 /// A MacOS implementation of the Manatee `App` interface.
-/// 
+///
 /// In order to maintain a clean multi-platform build, this struct should almost never be directly
 /// used. For usage, see `app.getApp()`.
 pub const MacosApp = struct {
     pub fn init() MacosApp {
-        return MacosApp {};
+        return MacosApp{};
     }
 
     pub fn app(self: *MacosApp) App {
-        return App {
+        return App{
             .ptr = self,
             .impl = &.{ .deinit = deinit, .run = run },
         };
