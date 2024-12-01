@@ -20,7 +20,7 @@
     "editor.stickyScroll.defaultModel": "foldingProviderModel",
     "editor.codeActionsOnSave": {
       "source.fixAll": "explicit",
-      "source.organizeImports": "explicit",
+      "source.organizeImports": "never",
     },
   },
 }
