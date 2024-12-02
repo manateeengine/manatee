@@ -1,3 +1,4 @@
+const builtin = @import("builtin");
 const std = @import("std");
 
 // Manatee is composed of three main pieces, all defined in the below build function:
@@ -46,6 +47,14 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+
+    switch (builtin.os.tag) {
+        .macos => {
+            module.linkSystemLibrary("objc", .{});
+            module.linkFramework("AppKit", .{});
+        },
+        else => {},
+    }
 
     // Add Module to Exe
     exe.root_module.addImport("manatee", module);
