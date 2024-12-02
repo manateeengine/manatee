@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const system = @import("system.zig");
 
 pub const game_config = @import("game/game_config.zig");
@@ -23,12 +25,14 @@ pub const game_config = @import("game/game_config.zig");
 /// For more information on configuration (and what parts of this struct can be overridden via
 /// configuration), see the `GameConfig` struct.
 pub const Game = struct {
+    allocator: std.mem.Allocator,
     app: system.app.App,
     title: []const u8,
 
-    pub fn init(config: game_config.GameConfig) Game {
-        const app = config.app orelse system.app.getApp();
+    pub fn init(allocator: std.mem.Allocator, config: game_config.GameConfig) !Game {
+        const app = config.app orelse try system.app.getAppInterfaceStruct(allocator);
         return .{
+            .allocator = allocator,
             .app = app,
             .title = config.title,
         };
@@ -40,7 +44,9 @@ pub const Game = struct {
         self.app.run();
     }
 
-    pub fn deinit(self: *Game) void {
+    pub fn deinit(
+        self: *Game,
+    ) void {
         self.app.deinit();
         self.* = undefined;
     }
