@@ -77,7 +77,7 @@ pub fn build(b: *std.Build) void {
 
     // Setup Test Step
     const unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/root.zig"),
+        .root_source_file = b.path("src/manatee.zig"),
         .target = target,
         .optimize = optimize,
     });
