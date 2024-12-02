@@ -53,19 +53,18 @@ pub const App = struct {
     }
 
     pub fn deinit(self: App) void {
-        self.impl.deinit(self.ptr);
+        return self.impl.deinit(self.ptr);
     }
 };
 
 /// A function that automatically determines which instance of the Manatee App interface to use,
 /// based off of the Zig compilation target
-pub fn getApp() App {
+pub fn getAppInterfaceStruct(allocator: std.mem.Allocator) !App {
     const base_app = switch (builtin.os.tag) {
         .macos => @import("app/macos.zig").MacosApp,
         .windows => @import("app/win32.zig").Win32App,
         else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
     };
 
-    var app = base_app.init();
-    return app.app();
+    return try base_app.init(allocator);
 }
