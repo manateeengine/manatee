@@ -4,8 +4,10 @@
   // custom dictionary words here and there works well enough for now
   "cSpell.words": [
     "anyopaque",
+    "anytype",
     "comptime",
     "deinit",
+    "objc", // Prefix used internally by Objective-C
     "orelse"
   ],
   "editor.tabSize": 2,
