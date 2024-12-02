@@ -12,6 +12,13 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    // Setup Zig Module
+    const module = b.addModule("manatee", .{
+        .root_source_file = b.path("src/manatee.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     // Setup Static Lib
     const lib = b.addStaticLibrary(.{
         .name = "manatee",
@@ -39,6 +46,14 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+
+    // Add Module to Exe
+    exe.root_module.addImport("manatee", module);
+    exe_check.root_module.addImport("manatee", module);
+
+    // Add Module to Lib
+    lib.root_module.addImport("manatee", module);
+    lib_check.root_module.addImport("manatee", module);
 
     // Setup Check Step
     const check = b.step("check", "Check Compilation for ZLS");
