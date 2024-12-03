@@ -3,12 +3,33 @@
   // probably make a cSpell PR addressing these at some point in the near future, but adding a few
   // custom dictionary words here and there works well enough for now
   "cSpell.words": [
+    // Zig words missing from dictionary
+    "anyerror",
     "anyopaque",
     "anytype",
     "comptime",
     "deinit",
-    "objc", // Prefix used internally by Objective-C
-    "orelse"
+    "noalias",
+    "orelse",
+    "usingnamespace",
+    // Macos words
+    "borderless",
+    "miniaturizable",
+    "nonactivating",
+    "nonretained",
+    "ivar",
+    "objc",
+    "stret",
+    // Misc
+    "hashimoto",
+    "objz",
+  ],
+  "cSpell.ignorePaths": [
+    ".git/{info,lfs,logs,refs,objects}/**",
+    ".git/{index,*refs,*HEAD}",
+    ".vscode",
+    ".zig-cache",
+    "zig-out"
   ],
   "editor.tabSize": 2,
   // Note, this won't work if using VSCode "workspaces", the repo must be opened directly
