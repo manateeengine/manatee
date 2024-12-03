@@ -26,20 +26,25 @@ pub const game_config = @import("game/game_config.zig");
 /// configuration), see the `GameConfig` struct.
 pub const Game = struct {
     allocator: std.mem.Allocator,
+    config: game_config.GameConfig,
     app: system.app.App,
-    title: []const u8,
 
     pub fn init(allocator: std.mem.Allocator, config: game_config.GameConfig) !Game {
+        // Create an app for the current platform
         const app = config.app orelse try system.app.getAppInterfaceStruct(allocator);
         return .{
             .allocator = allocator,
             .app = app,
-            .title = config.title,
+            .config = config,
         };
     }
 
     /// Starts your game's event loop and runs until terminated
     pub fn run(self: *Game) !void {
+        // Open the main application window
+        // TODO: Add the ability to render content in the window
+        _ = try self.app.openWindow(.{ .title = self.config.title });
+
         // Start the application event loop
         self.app.run();
     }
