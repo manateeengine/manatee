@@ -13,7 +13,12 @@ const manatee = @import("manatee.zig");
 /// makes building the MVP of Manatee significantly harder, but nobody ever said greatness came
 /// easily!
 pub fn main() !void {
-    var editor_game = manatee.Game.init(.{});
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var editor_game = try manatee.Game.init(allocator, .{});
     defer editor_game.deinit();
+
     try editor_game.run();
 }

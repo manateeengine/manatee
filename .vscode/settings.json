@@ -3,12 +3,48 @@
   // probably make a cSpell PR addressing these at some point in the near future, but adding a few
   // custom dictionary words here and there works well enough for now
   "cSpell.words": [
+    // Zig words missing from dictionary
+    "anyerror",
     "anyopaque",
+    "anytype",
     "comptime",
     "deinit",
-    "orelse"
+    "noalias",
+    "orelse",
+    "usingnamespace",
+    // Macos words
+    "borderless",
+    "miniaturizable",
+    "nonactivating",
+    "nonretained",
+    "ivar",
+    "objc",
+    "stret",
+    // Windows words (I hate Hungarian Notation SO much)
+    "HINSTANCE",
+    "HREDRAW",
+    "lpfn",
+    "lpsz",
+    "OVERLAPPEDWINDOW",
+    "USEDEFAULT",
+    "VREDRAW",
+    "WNDCLASS",
+    "WNDCLASSEXW",
+    "WINAPI",
+    "zigwin32",
+    // Misc
+    "hashimoto",
+    "objz",
+  ],
+  "cSpell.ignorePaths": [
+    ".git/{info,lfs,logs,refs,objects}/**",
+    ".git/{index,*refs,*HEAD}",
+    ".vscode",
+    ".zig-cache",
+    "zig-out"
   ],
   "editor.tabSize": 2,
+  "files.eol": "\n",
   // Note, this won't work if using VSCode "workspaces", the repo must be opened directly
   "zig.buildOnSave": true,
   "zig.zls.enableBuildOnSave": true,

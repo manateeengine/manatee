@@ -1,3 +1,4 @@
+const builtin = @import("builtin");
 const std = @import("std");
 
 // Manatee is composed of three main pieces, all defined in the below build function:
@@ -8,9 +9,16 @@ const std = @import("std");
 // "_check" in order to get more useful information from ZLS. For more information as to why this
 // is done, see https://zigtools.org/zls/guides/build-on-save
 
-pub fn build(b: *std.Build) void {
+pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+
+    // Setup Zig Module
+    const module = b.addModule("manatee", .{
+        .root_source_file = b.path("src/manatee.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
 
     // Setup Static Lib
     const lib = b.addStaticLibrary(.{
@@ -40,6 +48,30 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    switch (builtin.os.tag) {
+        .macos => {
+            module.linkSystemLibrary("objc", .{});
+            module.linkFramework("AppKit", .{});
+        },
+        .windows => {
+            const zigwin32 = b.dependency("zigwin32", .{});
+            module.addImport("zigwin32", zigwin32.module("zigwin32"));
+
+            // This is only added so ZLS autocomplete will actually work lol
+            exe_check.root_module.addImport("zigwin32", zigwin32.module("zigwin32"));
+            exe.root_module.addImport("zigwin32", zigwin32.module("zigwin32"));
+        },
+        else => {},
+    }
+
+    // Add Module to Exe
+    exe.root_module.addImport("manatee", module);
+    exe_check.root_module.addImport("manatee", module);
+
+    // Add Module to Lib
+    lib.root_module.addImport("manatee", module);
+    lib_check.root_module.addImport("manatee", module);
+
     // Setup Check Step
     const check = b.step("check", "Check Compilation for ZLS");
     check.dependOn(&lib_check.step);
@@ -62,7 +94,7 @@ pub fn build(b: *std.Build) void {
 
     // Setup Test Step
     const unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/root.zig"),
+        .root_source_file = b.path("src/manatee.zig"),
         .target = target,
         .optimize = optimize,
     });

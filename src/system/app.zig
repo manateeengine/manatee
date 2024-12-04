@@ -1,35 +1,11 @@
 const builtin = @import("builtin");
 const std = @import("std");
 
+const window = @import("window.zig");
+const Window = window.Window;
+const WindowConfig = window.window_config.WindowConfig;
+
 /// The standard Manatee App interface.
-///
-/// Example Usage:
-/// ```zig
-/// const manatee = @import("manatee");
-///
-/// pub const MyCustomApp = struct {
-///     pub fn init() MyCustomApp {
-///         return MyCustomApp {};
-///     }
-///
-///     pub fn app(self: *MyCustomApp) manatee.system.App {
-///         return manatee.system.App {
-///             .ptr = self,
-///             .impl = &.{ .deinit = deinit, .run = run },
-///         };
-///     }
-///
-///     pub fn run(ctx: *anyopaque) void {
-///         const self: *MyCustomApp = @ptrCast(@alignCast(ctx));
-///         // Your custom event loop goes here!
-///     }
-///
-///     pub fn deinit(ctx: *anyopaque) void {
-///         const self: *MyCustomApp = @ptrCast(@alignCast(ctx));
-///         self.* = undefined;
-///     }
-/// };
-/// ```
 ///
 /// An app represents all of the core system functionality needed to create and manage a desktop
 /// application for a given OS. This includes (but is not limited to) window creation, window
@@ -45,27 +21,31 @@ pub const App = struct {
 
     pub const AppInterface = struct {
         deinit: *const fn (ctx: *anyopaque) void,
+        openWindow: *const fn (ctx: *anyopaque, config: WindowConfig) anyerror!Window,
         run: *const fn (ctx: *anyopaque) void,
     };
+
+    pub fn openWindow(self: App, config: WindowConfig) !Window {
+        return try self.impl.openWindow(self.ptr, config);
+    }
 
     pub fn run(self: App) void {
         return self.impl.run(self.ptr);
     }
 
     pub fn deinit(self: App) void {
-        self.impl.deinit(self.ptr);
+        return self.impl.deinit(self.ptr);
     }
 };
 
 /// A function that automatically determines which instance of the Manatee App interface to use,
 /// based off of the Zig compilation target
-pub fn getApp() App {
+pub fn getAppInterfaceStruct(allocator: std.mem.Allocator) !App {
     const base_app = switch (builtin.os.tag) {
-        .macos => @import("app/macos.zig").MacosApp,
-        .windows => @import("app/win32.zig").Win32App,
+        .macos => @import("app/macos_app.zig").MacosApp,
+        .windows => @import("app/win32_app.zig").Win32App,
         else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
     };
 
-    var app = base_app.init();
-    return app.app();
+    return try base_app.init(allocator);
 }

@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const system = @import("system.zig");
 
 pub const game_config = @import("game/game_config.zig");
@@ -23,24 +25,34 @@ pub const game_config = @import("game/game_config.zig");
 /// For more information on configuration (and what parts of this struct can be overridden via
 /// configuration), see the `GameConfig` struct.
 pub const Game = struct {
+    allocator: std.mem.Allocator,
+    config: game_config.GameConfig,
     app: system.app.App,
-    title: []const u8,
 
-    pub fn init(config: game_config.GameConfig) Game {
-        const app = config.app orelse system.app.getApp();
+    pub fn init(allocator: std.mem.Allocator, config: game_config.GameConfig) !Game {
+        // Create an app for the current platform
+        const app = config.app orelse try system.app.getAppInterfaceStruct(allocator);
         return .{
+            .allocator = allocator,
             .app = app,
-            .title = config.title,
+            .config = config,
         };
     }
 
     /// Starts your game's event loop and runs until terminated
     pub fn run(self: *Game) !void {
+        // Open the main application window
+        // TODO: Add the ability to render content in the window
+        const window = try self.app.openWindow(.{ .title = self.config.title });
+        defer window.deinit();
+
         // Start the application event loop
         self.app.run();
     }
 
-    pub fn deinit(self: *Game) void {
+    pub fn deinit(
+        self: *Game,
+    ) void {
         self.app.deinit();
         self.* = undefined;
     }
