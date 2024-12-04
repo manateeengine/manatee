@@ -3,6 +3,7 @@ const std = @import("std");
 const App = @import("../app.zig").App;
 const Win32Window = @import("../window/win32_window.zig").Win32Window;
 const window = @import("../window.zig");
+const win32 = @import("../win32.zig");
 
 const Window = window.Window;
 const WindowConfig = window.window_config.WindowConfig;
@@ -19,7 +20,7 @@ pub const Win32App = struct {
         instance.* = Win32App{ .allocator = allocator };
         return App{
             .ptr = instance,
-            .impl = &.{ .deinit = deinit, .run = run },
+            .impl = &.{ .deinit = deinit, .openWindow = openWindow, .run = run },
         };
     }
 
@@ -31,7 +32,12 @@ pub const Win32App = struct {
 
     pub fn run(ctx: *anyopaque) void {
         const self: *Win32App = @ptrCast(@alignCast(ctx));
-        _ = self;
+        _ = self; // I'll probably need this at some point lol
+        var msg: win32.Msg = undefined;
+        while (win32.getMessageW(&msg, null, 0, 0) > 0) {
+            _ = win32.translateMessage(&msg);
+            _ = win32.dispatchMessageW(&msg);
+        }
     }
 
     pub fn deinit(ctx: *anyopaque) void {

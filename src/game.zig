@@ -43,7 +43,8 @@ pub const Game = struct {
     pub fn run(self: *Game) !void {
         // Open the main application window
         // TODO: Add the ability to render content in the window
-        _ = try self.app.openWindow(.{ .title = self.config.title });
+        const window = try self.app.openWindow(.{ .title = self.config.title });
+        defer window.deinit();
 
         // Start the application event loop
         self.app.run();

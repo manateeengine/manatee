@@ -1,0 +1,2 @@
+# Fix the stupid line endings on Windows (WHY IS IT DIFFERENT FROM EVERYWHERE ELSE)
+* text eol=lf

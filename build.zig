@@ -9,7 +9,7 @@ const std = @import("std");
 // "_check" in order to get more useful information from ZLS. For more information as to why this
 // is done, see https://zigtools.org/zls/guides/build-on-save
 
-pub fn build(b: *std.Build) void {
+pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
@@ -52,6 +52,14 @@ pub fn build(b: *std.Build) void {
         .macos => {
             module.linkSystemLibrary("objc", .{});
             module.linkFramework("AppKit", .{});
+        },
+        .windows => {
+            const zigwin32 = b.dependency("zigwin32", .{});
+            module.addImport("zigwin32", zigwin32.module("zigwin32"));
+
+            // This is only added so ZLS autocomplete will actually work lol
+            exe_check.root_module.addImport("zigwin32", zigwin32.module("zigwin32"));
+            exe.root_module.addImport("zigwin32", zigwin32.module("zigwin32"));
         },
         else => {},
     }
