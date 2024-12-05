@@ -26,16 +26,23 @@ pub const game_config = @import("game/game_config.zig");
 /// configuration), see the `GameConfig` struct.
 pub const Game = struct {
     allocator: std.mem.Allocator,
-    config: game_config.GameConfig,
     app: system.app.App,
+    config: game_config.GameConfig,
+    gpu: system.gpu.Gpu,
 
     pub fn init(allocator: std.mem.Allocator, config: game_config.GameConfig) !Game {
         // Create an app for the current platform
         const app = config.app orelse try system.app.getAppInterfaceStruct(allocator);
+
+        // Connect to the GPU
+        const gpu = config.gpu orelse try system.gpu.getGpuInterfaceStruct(allocator);
+
+        // Throw everything into a main game struct, yay!
         return .{
             .allocator = allocator,
             .app = app,
             .config = config,
+            .gpu = gpu,
         };
     }
 
@@ -53,6 +60,7 @@ pub const Game = struct {
     pub fn deinit(
         self: *Game,
     ) void {
+        self.gpu.deinit();
         self.app.deinit();
         self.* = undefined;
     }
