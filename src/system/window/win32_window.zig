@@ -12,18 +12,18 @@ const WindowConfig = window.window_config.WindowConfig;
 /// application's event loop. Please use app.openWindow() to create new Windows.
 pub const Win32Window = struct {
     allocator: std.mem.Allocator,
-    hwnd: win32.HWnd,
+    hwnd: win32.foundation.HWnd,
 
     pub fn init(allocator: std.mem.Allocator, config: WindowConfig) !Window {
-        const h_instance = @as(win32.HInstance, @ptrCast(@alignCast(win32.getModuleHandleW(null).?)));
+        const h_instance = @as(win32.foundation.HInstance, @ptrCast(@alignCast(win32.system.library_loader.getModuleHandleW(null).?)));
         const window_class_name = win32.l("ManateeWindowClass");
 
         const utf16_title = try std.unicode.utf8ToUtf16LeAllocZ(allocator, config.title);
         defer allocator.free(utf16_title);
 
-        const window_class = win32.WndClassExW{
-            .cbSize = @sizeOf(win32.WndClassExW),
-            .style = win32.WndClassStyles{ .HREDRAW = 1, .VREDRAW = 1 },
+        const window_class = win32.ui.windows_and_messaging.WndClassExW{
+            .cbSize = @sizeOf(win32.ui.windows_and_messaging.WndClassExW),
+            .style = win32.ui.windows_and_messaging.WndClassStyles{ .HREDRAW = 1, .VREDRAW = 1 },
             .lpfnWndProc = process,
             .cbClsExtra = 0,
             .cbWndExtra = 0,
@@ -35,15 +35,15 @@ pub const Win32Window = struct {
             .lpszClassName = window_class_name,
             .hIconSm = null,
         };
-        _ = win32.registerClassExW(&window_class);
+        _ = win32.ui.windows_and_messaging.registerClassExW(&window_class);
 
-        const hwnd = win32.createWindowExW(
-            win32.WsExOverlappedWindow,
+        const hwnd = win32.ui.windows_and_messaging.createWindowExW(
+            win32.ui.windows_and_messaging.WsExOverlappedWindow,
             window_class_name,
             utf16_title,
-            win32.WsOverlappedWindow,
-            win32.CwUseDefault,
-            win32.CwUseDefault,
+            win32.ui.windows_and_messaging.WsOverlappedWindow,
+            win32.ui.windows_and_messaging.CwUseDefault,
+            win32.ui.windows_and_messaging.CwUseDefault,
             @intCast(config.width),
             @intCast(config.height),
             null,
@@ -52,7 +52,7 @@ pub const Win32Window = struct {
             null,
         );
 
-        _ = win32.showWindow(hwnd, win32.SwShow);
+        _ = win32.ui.windows_and_messaging.showWindow(hwnd, win32.ui.windows_and_messaging.SwShow);
 
         const instance = try allocator.create(Win32Window);
         instance.* = Win32Window{ .allocator = allocator, .hwnd = hwnd.? };
@@ -62,13 +62,13 @@ pub const Win32Window = struct {
         };
     }
 
-    pub fn process(hwnd: win32.HWnd, msg: win32.UInt, w_param: win32.WParam, l_param: win32.LParam) callconv(win32.WinApi) win32.LResult {
+    pub fn process(hwnd: win32.foundation.HWnd, msg: win32.UInt, w_param: win32.foundation.WParam, l_param: win32.foundation.LParam) callconv(win32.WinApi) win32.foundation.LResult {
         return switch (msg) {
-            win32.WmDestroy => {
-                win32.postQuitMessage(0);
+            win32.ui.windows_and_messaging.WmDestroy => {
+                win32.ui.windows_and_messaging.postQuitMessage(0);
                 return 0;
             },
-            else => win32.defWindowProcW(hwnd, msg, w_param, l_param),
+            else => win32.ui.windows_and_messaging.defWindowProcW(hwnd, msg, w_param, l_param),
         };
     }
 

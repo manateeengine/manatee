@@ -1,4 +1,4 @@
-//! A collection of idiomatic Zig utilities for writing native MacOS desktop applications.
+//! A collection of idiomatic Zig bindings for writing native MacOS desktop applications.
 
 pub const app_kit = @import("macos/app_kit.zig");
 pub const core_graphics = @import("macos/core_graphics.zig");
