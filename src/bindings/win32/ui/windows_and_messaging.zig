@@ -2,6 +2,7 @@ const c = @import("../c.zig");
 
 pub const createWindowExW = c.ui.windows_and_messaging.CreateWindowExW;
 pub const defWindowProcW = c.ui.windows_and_messaging.DefWindowProcW;
+pub const destroyWindow = c.ui.windows_and_messaging.DestroyWindow;
 pub const dispatchMessageW = c.ui.windows_and_messaging.DispatchMessageW;
 pub const getMessageW = c.ui.windows_and_messaging.GetMessageW;
 pub const postQuitMessage = c.ui.windows_and_messaging.PostQuitMessage;

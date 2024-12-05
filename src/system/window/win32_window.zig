@@ -74,6 +74,7 @@ pub const Win32Window = struct {
 
     pub fn deinit(ctx: *anyopaque) void {
         const self: *Win32Window = @ptrCast(@alignCast(ctx));
+        _ = win32.ui.windows_and_messaging.destroyWindow(self.hwnd);
         self.allocator.destroy(self);
     }
 };
