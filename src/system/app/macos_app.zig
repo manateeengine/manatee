@@ -1,7 +1,7 @@
 const std = @import("std");
 
+const macos = @import("../../bindings.zig").macos;
 const App = @import("../app.zig").App;
-const macos = @import("../macos.zig");
 const MacosWindow = @import("../window/macos_window.zig").MacosWindow;
 const window = @import("../window.zig");
 

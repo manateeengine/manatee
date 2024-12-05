@@ -1,7 +1,7 @@
 const std = @import("std");
 
+const win32 = @import("../../bindings.zig").win32;
 const window = @import("../window.zig");
-const win32 = @import("../win32.zig");
 
 const Window = window.Window;
 const WindowConfig = window.window_config.WindowConfig;
