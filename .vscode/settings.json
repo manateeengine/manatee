@@ -21,8 +21,10 @@
     "objc",
     "stret",
     // Windows words (I hate Hungarian Notation SO much)
+    "dxgi",
     "HINSTANCE",
     "HREDRAW",
+    "IDXGI",
     "lpfn",
     "lpsz",
     "OVERLAPPEDWINDOW",
@@ -35,6 +37,7 @@
     // Misc
     "hashimoto",
     "objz",
+    "swapchain",
   ],
   "cSpell.ignorePaths": [
     ".git/{info,lfs,logs,refs,objects}/**",
