@@ -18,8 +18,15 @@ pub const Window = struct {
     impl: *const WindowInterface,
 
     pub const WindowInterface = struct {
+        height: u32,
+        width: u32,
         deinit: *const fn (ctx: *anyopaque) void,
+        getNativeWindow: *const fn (ctx: *anyopaque) *anyopaque,
     };
+
+    pub fn getNativeWindow(self: Window) *anyopaque {
+        return self.impl.getNativeWindow(self.ptr);
+    }
 
     pub fn deinit(self: Window) void {
         return self.impl.deinit(self.ptr);

@@ -58,11 +58,16 @@ pub const Win32Window = struct {
         instance.* = Win32Window{ .allocator = allocator, .hwnd = hwnd.? };
         return Window{
             .ptr = instance,
-            .impl = &.{ .deinit = deinit },
+            .impl = &.{ .height = @intCast(config.height), .width = @intCast(config.width), .deinit = deinit, .getNativeWindow = getNativeWindow },
         };
     }
 
-    pub fn process(hwnd: win32.foundation.HWnd, msg: win32.UInt, w_param: win32.foundation.WParam, l_param: win32.foundation.LParam) callconv(win32.WinApi) win32.foundation.LResult {
+    fn getNativeWindow(ctx: *anyopaque) *anyopaque {
+        const self: *Win32Window = @ptrCast(@alignCast(ctx));
+        return self.hwnd;
+    }
+
+    fn process(hwnd: win32.foundation.HWnd, msg: win32.UInt, w_param: win32.foundation.WParam, l_param: win32.foundation.LParam) callconv(win32.WinApi) win32.foundation.LResult {
         return switch (msg) {
             win32.ui.windows_and_messaging.WmDestroy => {
                 win32.ui.windows_and_messaging.postQuitMessage(0);

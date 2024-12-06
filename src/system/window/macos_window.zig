@@ -44,8 +44,13 @@ pub const MacosWindow = struct {
         instance.* = MacosWindow{ .allocator = allocator, .ns_window = ns_window };
         return Window{
             .ptr = instance,
-            .impl = &.{ .deinit = deinit },
+            .impl = &.{ .height = @intCast(config.height), .width = @intCast(config.width), .deinit = deinit, .getNativeWindow = getNativeWindow },
         };
+    }
+
+    fn getNativeWindow(ctx: *anyopaque) *anyopaque {
+        const self: *MacosWindow = @ptrCast(@alignCast(ctx));
+        return self.ns_window;
     }
 
     pub fn deinit(ctx: *anyopaque) void {
