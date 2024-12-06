@@ -32,10 +32,10 @@ pub const Game = struct {
 
     pub fn init(allocator: std.mem.Allocator, config: game_config.GameConfig) !Game {
         // Create an app for the current platform
-        const app = config.app orelse try system.app.getAppInterfaceStruct(allocator);
+        const app = config.app orelse try system.app.getAppInterfaceStruct().init(allocator);
 
         // Connect to the GPU
-        const gpu = config.gpu orelse try system.gpu.getGpuInterfaceStruct(allocator);
+        const gpu = config.gpu orelse try system.gpu.getGpuInterfaceStruct().init(allocator);
 
         // Throw everything into a main game struct, yay!
         return .{

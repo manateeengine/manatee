@@ -40,12 +40,12 @@ pub const App = struct {
 
 /// A function that automatically determines which instance of the Manatee App interface to use,
 /// based off of the Zig compilation target
-pub fn getAppInterfaceStruct(allocator: std.mem.Allocator) !App {
+pub fn getAppInterfaceStruct() type {
     const base_app = switch (builtin.os.tag) {
         .macos => @import("app/macos_app.zig").MacosApp,
         .windows => @import("app/win32_app.zig").Win32App,
         else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
     };
 
-    return try base_app.init(allocator);
+    return base_app;
 }
