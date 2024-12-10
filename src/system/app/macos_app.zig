@@ -25,14 +25,8 @@ pub const MacosApp = struct {
         instance.* = MacosApp{ .allocator = allocator, .ns_application = ns_application };
         return App{
             .ptr = instance,
-            .impl = &.{ .deinit = deinit, .openWindow = openWindow, .run = run },
+            .impl = &.{ .deinit = deinit, .run = run },
         };
-    }
-
-    pub fn openWindow(ctx: *anyopaque, config: WindowConfig) !Window {
-        const self: *MacosApp = @ptrCast(@alignCast(ctx));
-        const new_window = try MacosWindow.init(self.allocator, config);
-        return new_window;
     }
 
     pub fn run(ctx: *anyopaque) void {

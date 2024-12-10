@@ -20,14 +20,8 @@ pub const Win32App = struct {
         instance.* = Win32App{ .allocator = allocator };
         return App{
             .ptr = instance,
-            .impl = &.{ .deinit = deinit, .openWindow = openWindow, .run = run },
+            .impl = &.{ .deinit = deinit, .run = run },
         };
-    }
-
-    pub fn openWindow(ctx: *anyopaque, config: WindowConfig) !Window {
-        const self: *Win32App = @ptrCast(@alignCast(ctx));
-        const new_window = try Win32Window.init(self.allocator, config);
-        return new_window;
     }
 
     pub fn run(ctx: *anyopaque) void {

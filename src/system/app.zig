@@ -21,13 +21,8 @@ pub const App = struct {
 
     pub const AppInterface = struct {
         deinit: *const fn (ctx: *anyopaque) void,
-        openWindow: *const fn (ctx: *anyopaque, config: WindowConfig) anyerror!Window,
         run: *const fn (ctx: *anyopaque) void,
     };
-
-    pub fn openWindow(self: App, config: WindowConfig) !Window {
-        return try self.impl.openWindow(self.ptr, config);
-    }
 
     pub fn run(self: App) void {
         return self.impl.run(self.ptr);
