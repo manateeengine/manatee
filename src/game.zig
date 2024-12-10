@@ -29,14 +29,14 @@ pub const Game = struct {
     app: system.app.App,
     config: game_config.GameConfig,
     gpu: system.gpu.Gpu,
-    main_window: *system.window.Window,
+    main_window: system.window.Window,
 
-    pub fn init(allocator: std.mem.Allocator, config: game_config.GameConfig) !*Game {
+    pub fn init(allocator: std.mem.Allocator, config: game_config.GameConfig) !Game {
         // Create an app for the current platform
         const app = config.app orelse try system.app.getAppInterfaceStruct().init(allocator);
 
         // Create the main application window
-        const main_window = try system.window.getWindowInterfaceStruct().init(allocator, .{ .title = config.title });
+        var main_window = try system.window.getWindowInterfaceStruct().init(allocator, .{ .title = config.title });
 
         // Connect to the GPU
         const gpu = config.gpu orelse try system.gpu.getGpuInterfaceStruct().init(allocator, &main_window);
