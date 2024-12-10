@@ -32,3 +32,15 @@ pub const Window = struct {
         return self.impl.deinit(self.ptr);
     }
 };
+
+/// A function that automatically determines which instance of the Manatee App interface to use,
+/// based off of the Zig compilation target
+pub fn getWindowInterfaceStruct() type {
+    const base_window = switch (builtin.os.tag) {
+        .macos => @import("window/macos_window.zig").MacosWindow,
+        .windows => @import("window/win32_window.zig").Win32Window,
+        else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
+    };
+
+    return base_window;
+}

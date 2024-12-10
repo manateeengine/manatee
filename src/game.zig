@@ -29,30 +29,30 @@ pub const Game = struct {
     app: system.app.App,
     config: game_config.GameConfig,
     gpu: system.gpu.Gpu,
+    main_window: *system.window.Window,
 
-    pub fn init(allocator: std.mem.Allocator, config: game_config.GameConfig) !Game {
+    pub fn init(allocator: std.mem.Allocator, config: game_config.GameConfig) !*Game {
         // Create an app for the current platform
         const app = config.app orelse try system.app.getAppInterfaceStruct().init(allocator);
 
+        // Create the main application window
+        const main_window = try system.window.getWindowInterfaceStruct().init(allocator, .{ .title = config.title });
+
         // Connect to the GPU
-        const gpu = config.gpu orelse try system.gpu.getGpuInterfaceStruct().init(allocator);
+        const gpu = config.gpu orelse try system.gpu.getGpuInterfaceStruct().init(allocator, &main_window);
 
         // Throw everything into a main game struct, yay!
-        return .{
+        return Game{
             .allocator = allocator,
             .app = app,
             .config = config,
             .gpu = gpu,
+            .main_window = main_window,
         };
     }
 
     /// Starts your game's event loop and runs until terminated
     pub fn run(self: *Game) !void {
-        // Open the main application window
-        // TODO: Add the ability to render content in the window
-        const window = try self.app.openWindow(.{ .title = self.config.title });
-        defer window.deinit();
-
         // Start the application event loop
         self.app.run();
     }
@@ -61,6 +61,7 @@ pub const Game = struct {
         self: *Game,
     ) void {
         self.gpu.deinit();
+        self.main_window.deinit();
         self.app.deinit();
         self.* = undefined;
     }

@@ -9,22 +9,24 @@ const direct3d = d3d12.direct3d;
 const direct3d12 = d3d12.direct3d12;
 const dxgi = d3d12.dxgi;
 
-/// A D3d12 implementation of the Manatee `GPU` interface.
+/// A D3D12 implementation of the Manatee `GPU` interface.
 ///
 /// In order to maintain a clean multi-backend build, this struct should almost never be directly
 /// used. For usage, see `gpu.getGpuInterfaceStruct()`.
 pub const D3d12Gpu = struct {
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator) !Gpu {
+    pub fn init(allocator: std.mem.Allocator, window: *Window) !Gpu {
         // TODO: This should probably be rewritten to be more idiomatic. ALso this should probably
         // check for error codes and return errors
 
         // Factory
+        // TODO: Release factory
         var factory: *dxgi.Factory7 = undefined;
         _ = dxgi.createFactory2(0, dxgi.iid_factory7, @ptrCast(&factory));
 
         // Adapter
+        // TODO: Release adapter
         var adapter: *dxgi.Adapter4 = undefined;
         _ = factory.IDXGIFactory6.EnumAdapterByGpuPreference(
             0,
@@ -34,6 +36,7 @@ pub const D3d12Gpu = struct {
         );
 
         // Device
+        // TODO: Release device
         var device: *direct3d12.Device9 = undefined;
         _ = direct3d12.createDevice(
             @ptrCast(adapter),
@@ -55,6 +58,7 @@ pub const D3d12Gpu = struct {
         // a UUID for my totally superior device #9!
         const manatee_creator_id = win32.Guid.initString("3e032e0e-9684-4ee5-bf8f-a157d212a4fe");
 
+        // TODO: Release command queue
         var command_queue: *direct3d12.CommandQueue = undefined;
         _ = device.CreateCommandQueue1(
             &command_queue_desc,
@@ -68,26 +72,45 @@ pub const D3d12Gpu = struct {
             .BufferCount = 2,
             .Format = dxgi.Format.R8G8B8A8_UNORM,
             .Stereo = 0,
-            .SampleDesc = .{ .Count = 0, .Quality = 0 },
+            .SampleDesc = .{ .Count = 1, .Quality = 0 },
             .AlphaMode = .UNSPECIFIED,
             .BufferUsage = dxgi.usage_render_target_output,
             .SwapEffect = dxgi.swap_effect_flip_discard,
             .Flags = 0,
-            // .Height = window.impl.height,
-            // .Width = window.impl.width,
-            .Height = 1,
-            .Width = 1,
+            .Height = window.impl.height,
+            .Width = window.impl.width,
             .Scaling = dxgi.Scaling.NONE,
         };
 
-        _ = swap_chain_desc;
+        // TODO: Release swapchain
+        var swap_chain: *dxgi.SwapChain4 = undefined;
+        _ = factory.IDXGIFactory2.CreateSwapChainForHwnd(
+            @ptrCast(command_queue),
+            @ptrCast(@alignCast(window.getNativeWindow())),
+            &swap_chain_desc,
+            null,
+            null,
+            @ptrCast(&swap_chain),
+        );
 
-        // TODO: This causes a segfault and I'm too sick to figure out why, gonna take a break from
-        // working on D3D12 and work on the Metal impl in the meantime
-        // const hwnd: win32.foundation.HWnd = @ptrCast(@alignCast(window.getNativeWindow()));
+        // Descriptor Heaps
+        const rtv_descriptor_heap_desc = direct3d12.DescriptorHeapDesc{
+            .Flags = .{},
+            .NumDescriptors = 2,
+            .Type = .RTV,
+            .NodeMask = 0,
+        };
 
-        // var swap_chain: *dxgi.SwapChain4 = undefined;
-        // _ = factory.IDXGIFactory2.CreateSwapChainForHwnd(@ptrCast(&device), hwnd, &swap_chain_desc, null, null, @ptrCast(&swap_chain));
+        var rtv_heap: *direct3d12.DescriptorHeap = undefined;
+        _ = device.ID3D12Device.CreateDescriptorHeap(
+            &rtv_descriptor_heap_desc,
+            direct3d12.iid_descriptor_heap,
+            @ptrCast(&rtv_heap),
+        );
+
+        // const rtv_descriptor_size = device.ID3D12Device.GetDescriptorHandleIncrementSize(direct3d12.DescriptorHeapType.RTV);
+
+        // _ = rtv_heap.GetCPUDescriptorHandleForHeapStart();
 
         const instance = try allocator.create(D3d12Gpu);
         instance.* = D3d12Gpu{ .allocator = allocator };
