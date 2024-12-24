@@ -50,7 +50,7 @@ pub const MacosWindow = struct {
 
     fn getNativeWindow(ctx: *anyopaque) *anyopaque {
         const self: *MacosWindow = @ptrCast(@alignCast(ctx));
-        return self.ns_window;
+        return self.ns_window.value;
     }
 
     pub fn deinit(ctx: *anyopaque) void {

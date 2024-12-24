@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const Gpu = @import("../gpu.zig").Gpu;
+const Window = @import("../window.zig").Window;
 
 /// A Metal implementation of the Manatee `GPU` interface.
 ///
@@ -9,8 +10,9 @@ const Gpu = @import("../gpu.zig").Gpu;
 pub const MetalGpu = struct {
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator) !Gpu {
+    pub fn init(allocator: std.mem.Allocator, main_window: *Window) !Gpu {
         const instance = try allocator.create(MetalGpu);
+        _ = main_window;
         instance.* = MetalGpu{ .allocator = allocator };
         return Gpu{
             .ptr = instance,
