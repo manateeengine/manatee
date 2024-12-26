@@ -4,4 +4,4 @@ pub const game = @import("game.zig");
 pub const system = @import("system.zig");
 
 pub const Game = game.Game;
-pub const GameConfig = game.game_config.GameConfig;
+pub const GameConfig = game.GameConfig;

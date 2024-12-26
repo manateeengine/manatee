@@ -2,25 +2,21 @@ const std = @import("std");
 
 const win32 = @import("../../bindings.zig").win32;
 const App = @import("../app.zig").App;
-const Win32Window = @import("../window/win32_window.zig").Win32Window;
-const window = @import("../window.zig");
-
-const Window = window.Window;
-const WindowConfig = window.window_config.WindowConfig;
 
 /// A Win32App implementation of the Manatee `App` interface.
-///
-/// In order to maintain a clean multi-platform build, this struct should almost never be directly
-/// used. For usage, see `app.getApp()`.
 pub const Win32App = struct {
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator) !App {
-        const instance = try allocator.create(Win32App);
-        instance.* = Win32App{ .allocator = allocator };
+    pub fn init(allocator: std.mem.Allocator) !Win32App {
+        return Win32App{
+            .allocator = allocator,
+        };
+    }
+
+    pub fn app(self: *Win32App) App {
         return App{
-            .ptr = instance,
-            .impl = &.{ .deinit = deinit, .run = run },
+            .ptr = @ptrCast(self),
+            .vtable = &vtable,
         };
     }
 
@@ -34,8 +30,13 @@ pub const Win32App = struct {
         }
     }
 
-    pub fn deinit(ctx: *anyopaque) void {
+    fn deinit(ctx: *anyopaque) void {
         const self: *Win32App = @ptrCast(@alignCast(ctx));
         self.allocator.destroy(self);
     }
+
+    const vtable = App.VTable{
+        .deinit = &deinit,
+        .run = &run,
+    };
 };

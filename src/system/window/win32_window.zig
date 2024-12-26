@@ -4,17 +4,16 @@ const win32 = @import("../../bindings.zig").win32;
 const window = @import("../window.zig");
 
 const Window = window.Window;
-const WindowConfig = window.window_config.WindowConfig;
+const WindowConfig = window.WindowConfig;
+const WindowDimensions = window.WindowDimensions;
 
 /// A Win32 implementation of the Manatee `Window` interface.
-///
-/// This interface should never be created directly, as doing os may detach your Window from your
-/// application's event loop. Please use app.openWindow() to create new Windows.
 pub const Win32Window = struct {
     allocator: std.mem.Allocator,
+    dimensions: WindowDimensions,
     hwnd: win32.foundation.HWnd,
 
-    pub fn init(allocator: std.mem.Allocator, config: WindowConfig) !Window {
+    pub fn init(allocator: std.mem.Allocator, config: WindowConfig) !Win32Window {
         const h_instance = @as(win32.foundation.HInstance, @ptrCast(@alignCast(win32.system.library_loader.getModuleHandleW(null).?)));
         const window_class_name = win32.l("ManateeWindowClass");
 
@@ -37,7 +36,8 @@ pub const Win32Window = struct {
         };
         _ = win32.ui.windows_and_messaging.registerClassExW(&window_class);
 
-        const hwnd = win32.ui.windows_and_messaging.createWindowExW(
+        const hwnd = try allocator.create(win32.foundation.HWnd);
+        hwnd.* = win32.ui.windows_and_messaging.createWindowExW(
             win32.ui.windows_and_messaging.WsExOverlappedWindow,
             window_class_name,
             utf16_title,
@@ -54,12 +54,26 @@ pub const Win32Window = struct {
 
         _ = win32.ui.windows_and_messaging.showWindow(hwnd, win32.ui.windows_and_messaging.SwShow);
 
-        const instance = try allocator.create(Win32Window);
-        instance.* = Win32Window{ .allocator = allocator, .hwnd = hwnd.? };
-        return Window{
-            .ptr = instance,
-            .impl = &.{ .height = @intCast(config.height), .width = @intCast(config.width), .deinit = deinit, .getNativeWindow = getNativeWindow },
+        return Win32Window{
+            .allocator = allocator,
+            .dimensions = WindowDimensions{
+                .height = config.height,
+                .width = config.width,
+            },
+            .hwnd = hwnd,
         };
+    }
+
+    pub fn window(self: *Win32Window) Window {
+        return Window{
+            .ptr = @ptrCast(self),
+            .vtable = &vtable,
+        };
+    }
+
+    fn getDimensions(ctx: *anyopaque) WindowDimensions {
+        const self: *Win32Window = @ptrCast(@alignCast(ctx));
+        return self.dimensions;
     }
 
     fn getNativeWindow(ctx: *anyopaque) *anyopaque {
@@ -67,6 +81,18 @@ pub const Win32Window = struct {
         return self.hwnd;
     }
 
+    fn deinit(ctx: *anyopaque) void {
+        const self: *Win32Window = @ptrCast(@alignCast(ctx));
+        self.allocator.destroy(self.hwnd);
+        self.allocator.destroy(self);
+    }
+
+    const vtable = Window.VTable{
+        .deinit = &deinit,
+        .getNativeWindow = &getNativeWindow,
+    };
+
+    /// Required to build the win32 event loop, used as a param when creating hwnd
     fn process(hwnd: win32.foundation.HWnd, msg: win32.UInt, w_param: win32.foundation.WParam, l_param: win32.foundation.LParam) callconv(win32.WinApi) win32.foundation.LResult {
         return switch (msg) {
             win32.ui.windows_and_messaging.WmDestroy => {
@@ -75,11 +101,5 @@ pub const Win32Window = struct {
             },
             else => win32.ui.windows_and_messaging.defWindowProcW(hwnd, msg, w_param, l_param),
         };
-    }
-
-    pub fn deinit(ctx: *anyopaque) void {
-        const self: *Win32Window = @ptrCast(@alignCast(ctx));
-        _ = win32.ui.windows_and_messaging.destroyWindow(self.hwnd);
-        self.allocator.destroy(self);
     }
 };

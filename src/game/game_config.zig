@@ -20,6 +20,6 @@ pub const GameConfig = struct {
     app: ?system.app.App = null,
     /// A Manatee `Gpu` implementation. When provided, this value will be used and an os-specific
     /// `Gpu` implementation will not be inferred. See `Game.init()` for more information.
-    gpu: ?system.gpu.Gpu = null,
+    // gpu: ?system.gpu.Gpu = null,
     title: []const u8 = "Manatee Game",
 };

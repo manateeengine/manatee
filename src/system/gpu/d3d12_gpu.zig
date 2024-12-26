@@ -1,7 +1,7 @@
 const std = @import("std");
 
-const win32 = @import("../../bindings.zig").win32;
 const d3d12 = @import("../../bindings.zig").d3d12;
+const win32 = @import("../../bindings.zig").win32;
 const Gpu = @import("../gpu.zig").Gpu;
 const Window = @import("../window.zig").Window;
 
@@ -10,13 +10,10 @@ const direct3d12 = d3d12.direct3d12;
 const dxgi = d3d12.dxgi;
 
 /// A D3D12 implementation of the Manatee `GPU` interface.
-///
-/// In order to maintain a clean multi-backend build, this struct should almost never be directly
-/// used. For usage, see `gpu.getGpuInterfaceStruct()`.
 pub const D3d12Gpu = struct {
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator, window: *Window) !Gpu {
+    pub fn init(allocator: std.mem.Allocator, window: *Window) !D3d12Gpu {
         // TODO: This should probably be rewritten to be more idiomatic. ALso this should probably
         // check for error codes and return errors
 
@@ -68,6 +65,7 @@ pub const D3d12Gpu = struct {
         );
 
         // Swapchain
+        const window_dimensions = window.getDimensions();
         const swap_chain_desc = dxgi.SwapChainDesc1{
             .BufferCount = 2,
             .Format = dxgi.Format.R8G8B8A8_UNORM,
@@ -77,8 +75,8 @@ pub const D3d12Gpu = struct {
             .BufferUsage = dxgi.usage_render_target_output,
             .SwapEffect = dxgi.swap_effect_flip_discard,
             .Flags = 0,
-            .Height = window.impl.height,
-            .Width = window.impl.width,
+            .Height = window_dimensions.height,
+            .Width = window_dimensions.width,
             .Scaling = dxgi.Scaling.NONE,
         };
 
@@ -112,21 +110,24 @@ pub const D3d12Gpu = struct {
 
         // _ = rtv_heap.GetCPUDescriptorHandleForHeapStart();
 
-        const instance = try allocator.create(D3d12Gpu);
-        instance.* = D3d12Gpu{ .allocator = allocator };
-        return Gpu{
-            .ptr = instance,
-            .impl = &.{ .deinit = deinit },
+        return D3d12Gpu{
+            .allocator = allocator,
         };
     }
 
-    pub fn createSwapchain(ctx: *anyopaque) void {
-        _ = ctx; // autofix
-
+    pub fn gpu(self: *D3d12Gpu) Gpu {
+        return Gpu{
+            .ptr = @ptrCast(self),
+            .vtable = &vtable,
+        };
     }
 
-    pub fn deinit(ctx: *anyopaque) void {
+    fn deinit(ctx: *anyopaque) void {
         const self: *D3d12Gpu = @ptrCast(@alignCast(ctx));
         self.allocator.destroy(self);
     }
+
+    const vtable = Gpu.VTable{
+        .deinit = &deinit,
+    };
 };

@@ -1,10 +1,6 @@
 const builtin = @import("builtin");
 const std = @import("std");
 
-const window = @import("window.zig");
-const Window = window.Window;
-const WindowConfig = window.window_config.WindowConfig;
-
 /// The standard Manatee App interface.
 ///
 /// An app represents all of the core system functionality needed to create and manage a desktop
@@ -17,19 +13,19 @@ const WindowConfig = window.window_config.WindowConfig;
 /// https://medium.com/@jerrythomas_in/exploring-compile-time-interfaces-in-zig-5c1a1a9e59fd
 pub const App = struct {
     ptr: *anyopaque,
-    impl: *const AppInterface,
+    vtable: *const VTable,
 
-    pub const AppInterface = struct {
+    pub const VTable = struct {
         deinit: *const fn (ctx: *anyopaque) void,
         run: *const fn (ctx: *anyopaque) void,
     };
 
     pub fn run(self: App) void {
-        return self.impl.run(self.ptr);
+        return self.vtable.run(self.ptr);
     }
 
     pub fn deinit(self: App) void {
-        return self.impl.deinit(self.ptr);
+        self.vtable.deinit(self.ptr);
     }
 };
 

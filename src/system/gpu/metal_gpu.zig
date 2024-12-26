@@ -1,29 +1,34 @@
 const std = @import("std");
 
+const macos = @import("../../bindings.zig").macos;
 const Gpu = @import("../gpu.zig").Gpu;
 const Window = @import("../window.zig").Window;
 
 /// A Metal implementation of the Manatee `GPU` interface.
-///
-/// In order to maintain a clean multi-backend build, this struct should almost never be directly
-/// used. For usage, see `gpu.getGpuInterfaceStruct()`.
 pub const MetalGpu = struct {
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator, main_window: *Window) !Gpu {
-        const instance = try allocator.create(MetalGpu);
-        _ = main_window;
-        instance.* = MetalGpu{ .allocator = allocator };
-        return Gpu{
-            .ptr = instance,
-            .impl = &.{ .deinit = deinit },
+    pub fn init(allocator: std.mem.Allocator, window: *Window) !MetalGpu {
+        _ = window.getNativeWindow();
+        // TODO: Implement Metal GPU
+        return MetalGpu{
+            .allocator = allocator,
         };
     }
 
-    // TODO: Implement Metal GPU Interface
+    pub fn gpu(self: *MetalGpu) Gpu {
+        return Gpu{
+            .ptr = @ptrCast(self),
+            .vtable = &vtable,
+        };
+    }
 
-    pub fn deinit(ctx: *anyopaque) void {
+    fn deinit(ctx: *anyopaque) void {
         const self: *MetalGpu = @ptrCast(@alignCast(ctx));
         self.allocator.destroy(self);
     }
+
+    const vtable = Gpu.VTable{
+        .deinit = &deinit,
+    };
 };

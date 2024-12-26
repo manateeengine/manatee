@@ -1,8 +1,6 @@
 const builtin = @import("builtin");
 const std = @import("std");
 
-const Window = @import("window.zig").Window;
-
 /// The standard Manatee GPU interface.
 ///
 /// A GPU represents a unified abstraction over a given graphics API, such as Direct3D12 or Metal.
@@ -23,25 +21,25 @@ const Window = @import("window.zig").Window;
 /// https://medium.com/@jerrythomas_in/exploring-compile-time-interfaces-in-zig-5c1a1a9e59fd
 pub const Gpu = struct {
     ptr: *anyopaque,
-    impl: *const GpuInterface,
+    vtable: *const VTable,
 
-    pub const GpuInterface = struct {
+    pub const VTable = struct {
         deinit: *const fn (ctx: *anyopaque) void,
     };
 
     pub fn deinit(self: Gpu) void {
-        return self.impl.deinit(self.ptr);
+        self.vtable.deinit(self.ptr);
     }
 };
 
 /// A function that automatically determines which instance of the Manatee GPU interface to use,
 /// based off of the Zig compilation target
 pub fn getGpuInterfaceStruct() type {
-    const base_gpu = switch (builtin.os.tag) {
-        .windows => @import("gpu/d3d12_gpu.zig").D3d12Gpu,
+    const base_app = switch (builtin.os.tag) {
         .macos => @import("gpu/metal_gpu.zig").MetalGpu,
-        else => @import("gpu/vulkan_gpu.zig").VulkanGpu,
+        .windows => @import("gpu/d3d12_gpu.zig").D3d12Gpu,
+        else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
     };
 
-    return base_gpu;
+    return base_app;
 }

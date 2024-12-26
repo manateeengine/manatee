@@ -4,24 +4,23 @@ const macos = @import("../../bindings.zig").macos;
 const window = @import("../window.zig");
 
 const Window = window.Window;
-const WindowConfig = window.window_config.WindowConfig;
+const WindowConfig = window.WindowConfig;
+const WindowDimensions = window.WindowDimensions;
 
 /// A MacOS implementation of the Manatee `Window` interface.
-///
-/// This interface should never be created directly, as doing os may detach your Window from your
-/// application's event loop. Please use app.openWindow() to create new Windows.
 pub const MacosWindow = struct {
     allocator: std.mem.Allocator,
-    ns_window: macos.app_kit.NSWindow,
+    dimensions: WindowDimensions,
+    ns_window: *macos.app_kit.NSWindow,
 
-    pub fn init(allocator: std.mem.Allocator, config: WindowConfig) !Window {
-        // This is ugly, I wish Zig's enum support for bitwise was better
+    pub fn init(allocator: std.mem.Allocator, config: WindowConfig) !MacosWindow {
         const style_mask = @intFromEnum(macos.app_kit.NSWindowStyleMask.NSWindowStyleMaskTitled) |
             @intFromEnum(macos.app_kit.NSWindowStyleMask.NSWindowStyleMaskClosable) |
             @intFromEnum(macos.app_kit.NSWindowStyleMask.NSWindowStyleMaskMiniaturizable) |
             @intFromEnum(macos.app_kit.NSWindowStyleMask.NSWindowStyleMaskResizable);
 
-        var ns_window = macos.app_kit.NSWindow.initWithContentRect(
+        var ns_window = try allocator.create(macos.app_kit.NSWindow);
+        ns_window.* = macos.app_kit.NSWindow.initWithContentRect(
             .{
                 .origin = .{
                     .x = 0,
@@ -40,12 +39,26 @@ pub const MacosWindow = struct {
         ns_window.setTitle(config.title);
         ns_window.makeKeyAndOrderFront();
 
-        const instance = try allocator.create(MacosWindow);
-        instance.* = MacosWindow{ .allocator = allocator, .ns_window = ns_window };
-        return Window{
-            .ptr = instance,
-            .impl = &.{ .height = @intCast(config.height), .width = @intCast(config.width), .deinit = deinit, .getNativeWindow = getNativeWindow },
+        return MacosWindow{
+            .allocator = allocator,
+            .dimensions = WindowDimensions{
+                .height = config.height,
+                .width = config.width,
+            },
+            .ns_window = ns_window,
         };
+    }
+
+    pub fn window(self: *MacosWindow) Window {
+        return Window{
+            .ptr = @ptrCast(self),
+            .vtable = &vtable,
+        };
+    }
+
+    fn getDimensions(ctx: *anyopaque) WindowDimensions {
+        const self: *MacosWindow = @ptrCast(@alignCast(ctx));
+        return self.dimensions;
     }
 
     fn getNativeWindow(ctx: *anyopaque) *anyopaque {
@@ -53,9 +66,15 @@ pub const MacosWindow = struct {
         return self.ns_window.value;
     }
 
-    pub fn deinit(ctx: *anyopaque) void {
+    fn deinit(ctx: *anyopaque) void {
         const self: *MacosWindow = @ptrCast(@alignCast(ctx));
-        self.ns_window.deinit();
+        self.allocator.destroy(self.ns_window);
         self.allocator.destroy(self);
     }
+
+    const vtable = Window.VTable{
+        .deinit = &deinit,
+        .getDimensions = &getDimensions,
+        .getNativeWindow = &getNativeWindow,
+    };
 };
