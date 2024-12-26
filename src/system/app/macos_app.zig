@@ -27,11 +27,10 @@ pub const MacosApp = struct {
         };
     }
 
-    fn run(ctx: *anyopaque) void {
-        const self: *MacosApp = @ptrCast(@alignCast(ctx));
-        self.ns_application.activate();
-        return self.ns_application.run();
-    }
+    const vtable = App.VTable{
+        .deinit = &deinit,
+        .run = &run,
+    };
 
     fn deinit(ctx: *anyopaque) void {
         const self: *MacosApp = @ptrCast(@alignCast(ctx));
@@ -39,8 +38,9 @@ pub const MacosApp = struct {
         self.allocator.destroy(self);
     }
 
-    const vtable = App.VTable{
-        .deinit = &deinit,
-        .run = &run,
-    };
+    fn run(ctx: *anyopaque) void {
+        const self: *MacosApp = @ptrCast(@alignCast(ctx));
+        self.ns_application.activate();
+        return self.ns_application.run();
+    }
 };

@@ -7,10 +7,9 @@ const std = @import("std");
 /// application for a given OS. This includes (but is not limited to) window creation, window
 /// painting, and event loop management.
 ///
-/// This interface is inspired by the Zig "interface" pattern defined in std.mem.Allocator. Fingers
-/// crossed that better, less verbose interface patterns will be added to Zig in a future version,
-/// but for now this is the best option. For more information on Zig interfaces, check out
-/// https://medium.com/@jerrythomas_in/exploring-compile-time-interfaces-in-zig-5c1a1a9e59fd
+/// This interface is inspired by the Zig "interface" pattern defined in std.mem.Allocator, and is
+/// heavily influenced by SuperAuguste's `zig-patterns` repo's "vtable" example. For more info,
+/// see https://github.com/SuperAuguste/zig-patterns/blob/main/src/typing/vtable.zig
 pub const App = struct {
     ptr: *anyopaque,
     vtable: *const VTable,
@@ -20,17 +19,22 @@ pub const App = struct {
         run: *const fn (ctx: *anyopaque) void,
     };
 
+    /// Starts the application's native event loop and runs until a termination signal is received.
     pub fn run(self: App) void {
         return self.vtable.run(self.ptr);
     }
 
+    /// Handles memory cleanup of anything created during the App's initialization process.
     pub fn deinit(self: App) void {
         self.vtable.deinit(self.ptr);
     }
 };
 
-/// A function that automatically determines which instance of the Manatee App interface to use,
-/// based off of the Zig compilation target
+/// A function that automatically determines which implementation of the Manatee App interface to
+/// use based off of the Zig compilation target.
+///
+/// This function will throw a `@compileError` if an App implementation does not exist for the
+/// targeted OS.
 pub fn getAppInterfaceStruct() type {
     const base_app = switch (builtin.os.tag) {
         .macos => @import("app/macos_app.zig").MacosApp,

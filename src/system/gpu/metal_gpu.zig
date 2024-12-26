@@ -23,12 +23,12 @@ pub const MetalGpu = struct {
         };
     }
 
+    const vtable = Gpu.VTable{
+        .deinit = &deinit,
+    };
+
     fn deinit(ctx: *anyopaque) void {
         const self: *MetalGpu = @ptrCast(@alignCast(ctx));
         self.allocator.destroy(self);
     }
-
-    const vtable = Gpu.VTable{
-        .deinit = &deinit,
-    };
 };

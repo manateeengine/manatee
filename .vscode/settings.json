@@ -12,6 +12,9 @@
     "noalias",
     "orelse",
     "usingnamespace",
+    "vtable",
+    // GPU Words
+    "swapchain",
     // Macos words
     "borderless",
     "miniaturizable",
@@ -34,10 +37,10 @@
     "WNDCLASSEXW",
     "WINAPI",
     "zigwin32",
-    // Misc
+    // Names / Credits
     "hashimoto",
     "objz",
-    "swapchain",
+    "superauguste",
   ],
   "cSpell.ignorePaths": [
     ".git/{info,lfs,logs,refs,objects}/**",
@@ -47,12 +50,16 @@
     "zig-out"
   ],
   "editor.tabSize": 2,
+  // Ensures consistent line endings on Windows / Unix
   "files.eol": "\n",
   // Note, this won't work if using VSCode "workspaces", the repo must be opened directly
   "zig.buildOnSave": true,
-  "zig.zls.enableBuildOnSave": true,
   "zig.formattingProvider": "extension",
+  "zig.zls.enabled": "on",
+  "zig.zls.enableBuildOnSave": true,
   "[zig]": {
+    // Only Zig files have a tab size of 4. This is to follow Zig's style guide defined in Zig's
+    // standard library. Everything else has a tab size of 2 because I prefer 2 spaces lol
     "editor.tabSize": 4,
     "editor.formatOnSave": true,
     "editor.inlayHints.enabled": "offUnlessPressed",

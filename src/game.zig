@@ -59,7 +59,6 @@ pub const Game = struct {
 
     /// Starts your game's event loop and runs until terminated
     pub fn run(self: *Game) !void {
-        std.debug.print("Running Game\n", .{});
         _ = self.main_window.getNativeWindow();
         // Start the application event loop
         self.app.run();
@@ -68,7 +67,6 @@ pub const Game = struct {
     pub fn deinit(
         self: *Game,
     ) void {
-        std.debug.print("Game Deinit\n", .{});
         self.gpu.deinit();
         self.main_window.deinit();
         self.app.deinit();

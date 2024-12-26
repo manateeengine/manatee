@@ -20,7 +20,17 @@ pub const Win32App = struct {
         };
     }
 
-    pub fn run(ctx: *anyopaque) void {
+    const vtable = App.VTable{
+        .deinit = &deinit,
+        .run = &run,
+    };
+
+    fn deinit(ctx: *anyopaque) void {
+        const self: *Win32App = @ptrCast(@alignCast(ctx));
+        self.allocator.destroy(self);
+    }
+
+    fn run(ctx: *anyopaque) void {
         const self: *Win32App = @ptrCast(@alignCast(ctx));
         _ = self; // I'll probably need this at some point lol
         var msg: win32.ui.windows_and_messaging.Msg = undefined;
@@ -29,14 +39,4 @@ pub const Win32App = struct {
             _ = win32.ui.windows_and_messaging.dispatchMessageW(&msg);
         }
     }
-
-    fn deinit(ctx: *anyopaque) void {
-        const self: *Win32App = @ptrCast(@alignCast(ctx));
-        self.allocator.destroy(self);
-    }
-
-    const vtable = App.VTable{
-        .deinit = &deinit,
-        .run = &run,
-    };
 };

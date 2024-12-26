@@ -122,12 +122,12 @@ pub const D3d12Gpu = struct {
         };
     }
 
+    const vtable = Gpu.VTable{
+        .deinit = &deinit,
+    };
+
     fn deinit(ctx: *anyopaque) void {
         const self: *D3d12Gpu = @ptrCast(@alignCast(ctx));
         self.allocator.destroy(self);
     }
-
-    const vtable = Gpu.VTable{
-        .deinit = &deinit,
-    };
 };

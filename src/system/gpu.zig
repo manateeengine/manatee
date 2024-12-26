@@ -15,10 +15,9 @@ const std = @import("std");
 /// appreciated, as I literally have no idea what I'm doing. With that in mind: LET'S GO MAKE SOME
 /// FUCKING TRIANGLES!
 ///
-/// This interface is inspired by the Zig "interface" pattern defined in std.mem.Allocator. Fingers
-/// crossed that better, less verbose interface patterns will be added to Zig in a future version,
-/// but for now this is the best option. For more information on Zig interfaces, check out
-/// https://medium.com/@jerrythomas_in/exploring-compile-time-interfaces-in-zig-5c1a1a9e59fd
+/// This interface is inspired by the Zig "interface" pattern defined in std.mem.Allocator, and is
+/// heavily influenced by SuperAuguste's `zig-patterns` repo's "vtable" example. For more info,
+/// see https://github.com/SuperAuguste/zig-patterns/blob/main/src/typing/vtable.zig
 pub const Gpu = struct {
     ptr: *anyopaque,
     vtable: *const VTable,
@@ -27,13 +26,17 @@ pub const Gpu = struct {
         deinit: *const fn (ctx: *anyopaque) void,
     };
 
+    /// Handles memory cleanup of anything created during the GPU's initialization process.
     pub fn deinit(self: Gpu) void {
         self.vtable.deinit(self.ptr);
     }
 };
 
-/// A function that automatically determines which instance of the Manatee GPU interface to use,
-/// based off of the Zig compilation target
+/// A function that automatically determines which implementation of the Manatee GPU interface to
+/// use based off of the Zig compilation target.
+///
+/// This function will throw a `@compileError` if a GPU implementation does not exist for the
+/// targeted OS.
 pub fn getGpuInterfaceStruct() type {
     const base_app = switch (builtin.os.tag) {
         .macos => @import("gpu/metal_gpu.zig").MetalGpu,

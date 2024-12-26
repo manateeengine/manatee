@@ -56,6 +56,18 @@ pub const MacosWindow = struct {
         };
     }
 
+    const vtable = Window.VTable{
+        .deinit = &deinit,
+        .getDimensions = &getDimensions,
+        .getNativeWindow = &getNativeWindow,
+    };
+
+    fn deinit(ctx: *anyopaque) void {
+        const self: *MacosWindow = @ptrCast(@alignCast(ctx));
+        self.allocator.destroy(self.ns_window);
+        self.allocator.destroy(self);
+    }
+
     fn getDimensions(ctx: *anyopaque) WindowDimensions {
         const self: *MacosWindow = @ptrCast(@alignCast(ctx));
         return self.dimensions;
@@ -65,16 +77,4 @@ pub const MacosWindow = struct {
         const self: *MacosWindow = @ptrCast(@alignCast(ctx));
         return self.ns_window.value;
     }
-
-    fn deinit(ctx: *anyopaque) void {
-        const self: *MacosWindow = @ptrCast(@alignCast(ctx));
-        self.allocator.destroy(self.ns_window);
-        self.allocator.destroy(self);
-    }
-
-    const vtable = Window.VTable{
-        .deinit = &deinit,
-        .getDimensions = &getDimensions,
-        .getNativeWindow = &getNativeWindow,
-    };
 };

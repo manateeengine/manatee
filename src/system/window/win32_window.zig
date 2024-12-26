@@ -36,8 +36,7 @@ pub const Win32Window = struct {
         };
         _ = win32.ui.windows_and_messaging.registerClassExW(&window_class);
 
-        const hwnd = try allocator.create(win32.foundation.HWnd);
-        hwnd.* = win32.ui.windows_and_messaging.createWindowExW(
+        const hwnd = win32.ui.windows_and_messaging.createWindowExW(
             win32.ui.windows_and_messaging.WsExOverlappedWindow,
             window_class_name,
             utf16_title,
@@ -50,7 +49,7 @@ pub const Win32Window = struct {
             null,
             h_instance,
             null,
-        );
+        ).?;
 
         _ = win32.ui.windows_and_messaging.showWindow(hwnd, win32.ui.windows_and_messaging.SwShow);
 
@@ -71,6 +70,18 @@ pub const Win32Window = struct {
         };
     }
 
+    const vtable = Window.VTable{
+        .deinit = &deinit,
+        .getDimensions = &getDimensions,
+        .getNativeWindow = &getNativeWindow,
+    };
+
+    fn deinit(ctx: *anyopaque) void {
+        const self: *Win32Window = @ptrCast(@alignCast(ctx));
+        _ = win32.ui.windows_and_messaging.destroyWindow(self.hwnd);
+        self.allocator.destroy(self);
+    }
+
     fn getDimensions(ctx: *anyopaque) WindowDimensions {
         const self: *Win32Window = @ptrCast(@alignCast(ctx));
         return self.dimensions;
@@ -80,17 +91,6 @@ pub const Win32Window = struct {
         const self: *Win32Window = @ptrCast(@alignCast(ctx));
         return self.hwnd;
     }
-
-    fn deinit(ctx: *anyopaque) void {
-        const self: *Win32Window = @ptrCast(@alignCast(ctx));
-        self.allocator.destroy(self.hwnd);
-        self.allocator.destroy(self);
-    }
-
-    const vtable = Window.VTable{
-        .deinit = &deinit,
-        .getNativeWindow = &getNativeWindow,
-    };
 
     /// Required to build the win32 event loop, used as a param when creating hwnd
     fn process(hwnd: win32.foundation.HWnd, msg: win32.UInt, w_param: win32.foundation.WParam, l_param: win32.foundation.LParam) callconv(win32.WinApi) win32.foundation.LResult {
