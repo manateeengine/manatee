@@ -20,6 +20,7 @@ pub const sel = @import("objective_c_runtime/sel.zig");
 
 pub const Class = class.Class;
 pub const Encoding = encoding.Encoding;
+pub const Id = c.id;
 pub const NSObject = ns_object.NSObject;
 pub const Object = object.Object;
 pub const Protocol = protocol.Protocol;

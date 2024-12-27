@@ -4,11 +4,13 @@
 const foundation = @import("foundation.zig");
 const objective_c_runtime = @import("objective_c_runtime.zig");
 
-const NSRect = foundation.numbers_data_and_basic_values.NSRect;
 const Class = objective_c_runtime.Class;
 const helpers = objective_c_runtime.helpers;
+const Id = objective_c_runtime.Id;
 const NSInteger = objective_c_runtime.data_types.NSInteger;
+const NsObjectMixin = objective_c_runtime.ns_object.NsObjectMixin;
 const NSUInteger = objective_c_runtime.data_types.NSUInteger;
+const NSRect = foundation.numbers_data_and_basic_values.NSRect;
 const Object = objective_c_runtime.Object;
 const objc = objective_c_runtime.objc;
 
@@ -49,92 +51,98 @@ pub const NSWindowStyleMask = enum(NSUInteger) {
 /// objects.
 /// See: https://developer.apple.com/documentation/appkit/nsapplication
 pub const NSApplication = struct {
-    class: Class,
-    object: Object,
-    /// The internal Objective-C Runtime value representing the Object
-    value: objective_c_runtime.c.id,
+    /// The internal Objective-C Runtime value representing the NSApplication
+    value: Id,
+    const ns_application_mixin = NSApplicationMixin(NSApplication, "NSApplication");
+    pub usingnamespace ns_application_mixin;
 
-    // TODO: Should this be named initSharedApplication? Idk
     pub fn init() NSApplication {
         const class = objc.getClass("NSApplication");
         const object = objc.msgSend(class, Object, "sharedApplication", .{});
         return NSApplication{
-            .class = class,
-            .object = object,
             .value = object.value,
         };
     }
 
-    pub fn activate(self: *NSApplication) void {
-        return objc.msgSend(self.object, void, "activate", .{});
-    }
-
-    pub fn run(self: *NSApplication) void {
-        return objc.msgSend(self.object, void, "run", .{});
-    }
-
-    /// Sets the application's activation policy
-    pub fn setActivationPolicy(self: *NSApplication, activation_policy: NSApplicationActivationPolicy) void {
-        return objc.msgSend(self.object, void, "setActivationPolicy:", .{activation_policy});
-    }
-
-    /// Sets the application's delegate
-    pub fn setDelegate(self: *NSApplication, delegate: Object) void {
-        return objc.msgSend(self.object, void, "setDelegate:", .{delegate.value});
-    }
-
     pub fn deinit(self: *NSApplication) void {
-        helpers.deallocObject(self.object);
+        ns_application_mixin.dealloc(self);
         self.* = undefined;
     }
 };
 
+pub fn NSApplicationMixin(comptime Self: type, class_name: []const u8) type {
+    return struct {
+        const ns_object_mixin = NsObjectMixin(Self, class_name);
+        pub usingnamespace ns_object_mixin;
+
+        pub fn activate(self: *Self) void {
+            return objc.msgSend(self, void, "activate", .{});
+        }
+
+        pub fn run(self: *Self) void {
+            return objc.msgSend(self, void, "run", .{});
+        }
+
+        /// Sets the application's activation policy
+        pub fn setActivationPolicy(self: *Self, activation_policy: NSApplicationActivationPolicy) void {
+            return objc.msgSend(self, void, "setActivationPolicy:", .{activation_policy});
+        }
+
+        /// Sets the application's delegate
+        pub fn setDelegate(self: *Self, delegate: anytype) void {
+            return objc.msgSend(self, void, "setDelegate:", .{delegate.value});
+        }
+    };
+}
+
 /// A window that an app displays on the screen.
 /// See: https://developer.apple.com/documentation/appkit/nswindow
 pub const NSWindow = struct {
-    class: Class,
-    object: Object,
-    value: objective_c_runtime.c.id,
+    /// The internal Objective-C Runtime value representing the NSWindow
+    value: Id,
+    const ns_window_mixin = NSWindowMixin(NSWindow, "NSWindow");
+    pub usingnamespace ns_window_mixin;
 
     pub fn init() NSWindow {
-        const class = objc.getClass("NSWindow");
-        const object = objc.msgSend(class, Object, "alloc", .{});
+        const object = ns_window_mixin.alloc();
         return NSWindow{
-            .class = class,
-            .object = object,
             .value = object.value,
         };
+    }
+
+    pub fn deinit(self: *NSApplication) void {
+        ns_window_mixin.dealloc();
+        self.* = undefined;
     }
 
     /// Initializes the window with the specified values.
     /// See: https://developer.apple.com/documentation/appkit/nswindow/init(contentrect:stylemask:backing:defer:)
     pub fn initWithContentRect(contentRect: NSRect, style: NSUInteger, backingStoreType: NSBackingStoreType, flag: bool) NSWindow {
-        const class = objc.getClass("NSWindow");
-        const object = objc.msgSend(class, Object, "alloc", .{});
+        const object = ns_window_mixin.alloc();
         _ = objc.msgSend(object, Object, "initWithContentRect:styleMask:backing:defer:", .{ contentRect, style, backingStoreType, flag });
         return NSWindow{
-            .class = class,
-            .object = object,
             .value = object.value,
         };
     }
-
-    /// Moves the window to the front of the screen list, within its level, and makes it the key
-    /// window; that is, it shows the window.
-    /// See: https://developer.apple.com/documentation/appkit/nswindow/makekeyandorderfront(_:)
-    pub fn makeKeyAndOrderFront(self: *NSWindow) void {
-        return objc.msgSend(self.object, void, "makeKeyAndOrderFront:", .{null});
-    }
-
-    /// Sets the window's title
-    pub fn setTitle(self: *NSWindow, title: []const u8) void {
-        const ns_string_class = objc.getClass("NSString");
-        const titleNsString = objc.msgSend(ns_string_class, Object, "stringWithUTF8String:", .{title});
-        return objc.msgSend(self.object, void, "setTitle:", .{titleNsString});
-    }
-
-    pub fn deinit(self: *NSWindow) void {
-        helpers.deallocObject(self.object);
-        self.* = undefined;
-    }
 };
+
+pub fn NSWindowMixin(comptime Self: type, class_name: []const u8) type {
+    return struct {
+        const ns_object_mixin = NsObjectMixin(Self, class_name);
+        pub usingnamespace ns_object_mixin;
+
+        /// Moves the window to the front of the screen list, within its level, and makes it the key
+        /// window; that is, it shows the window.
+        /// See: https://developer.apple.com/documentation/appkit/nswindow/makekeyandorderfront(_:)
+        pub fn makeKeyAndOrderFront(self: *Self) void {
+            return objc.msgSend(self, void, "makeKeyAndOrderFront:", .{null});
+        }
+
+        /// Sets the window's title
+        pub fn setTitle(self: *Self, title: []const u8) void {
+            const ns_string_class = objc.getClass("NSString");
+            const titleNsString = objc.msgSend(ns_string_class, Object, "stringWithUTF8String:", .{title});
+            return objc.msgSend(self, void, "setTitle:", .{titleNsString});
+        }
+    };
+}

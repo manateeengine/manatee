@@ -7,6 +7,7 @@ const App = @import("../app.zig").App;
 pub const MacosApp = struct {
     allocator: std.mem.Allocator,
     ns_application: *macos.app_kit.NSApplication,
+    ns_delegate: *macos.objective_c_runtime.NSObject,
 
     pub fn init(allocator: std.mem.Allocator) !MacosApp {
         // Set up the AppKit NSApplication
@@ -17,18 +18,21 @@ pub const MacosApp = struct {
         // There HAS to be a better, more Zig-native way to do this, but I don't know enough about
         // Objective-C programming to implement it, whatever it is
         const ns_application_delegate = macos.objective_c_runtime.objc.allocateProtocol("NSApplicationDelegate");
-        var application_delegate = macos.objective_c_runtime.NSObject.init();
-        _ = application_delegate.class.addProtocol(ns_application_delegate);
-        _ = application_delegate.class.addMethod("applicationShouldTerminateAfterLastWindowClosed:", struct {
+        var application_delegate = try allocator.create(macos.objective_c_runtime.NSObject);
+        application_delegate.* = macos.objective_c_runtime.NSObject.init();
+        var application_delegate_class = application_delegate.getClass();
+        _ = application_delegate_class.addProtocol(ns_application_delegate);
+        _ = application_delegate_class.addMethod("applicationShouldTerminateAfterLastWindowClosed:", struct {
             fn imp() callconv(.C) bool {
                 return true;
             }
         }.imp);
-        ns_application.setDelegate(application_delegate.object);
+        ns_application.setDelegate(application_delegate);
 
         return MacosApp{
             .allocator = allocator,
             .ns_application = ns_application,
+            .ns_delegate = application_delegate,
         };
     }
 
@@ -46,6 +50,9 @@ pub const MacosApp = struct {
 
     fn deinit(ctx: *anyopaque) void {
         const self: *MacosApp = @ptrCast(@alignCast(ctx));
+        self.ns_delegate.deinit();
+        self.ns_application.deinit();
+        self.allocator.destroy(self.ns_delegate);
         self.allocator.destroy(self.ns_application);
         self.allocator.destroy(self);
     }
