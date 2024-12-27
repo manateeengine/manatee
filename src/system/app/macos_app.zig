@@ -14,6 +14,18 @@ pub const MacosApp = struct {
         ns_application.* = macos.app_kit.NSApplication.init();
         ns_application.setActivationPolicy(macos.app_kit.NSApplicationActivationPolicy.NSApplicationActivationPolicyRegular);
 
+        // There HAS to be a better, more Zig-native way to do this, but I don't know enough about
+        // Objective-C programming to implement it, whatever it is
+        const ns_application_delegate = macos.objective_c_runtime.objc.allocateProtocol("NSApplicationDelegate");
+        var application_delegate = macos.objective_c_runtime.NSObject.init();
+        _ = application_delegate.class.addProtocol(ns_application_delegate);
+        _ = application_delegate.class.addMethod("applicationShouldTerminateAfterLastWindowClosed:", struct {
+            fn imp() callconv(.C) bool {
+                return true;
+            }
+        }.imp);
+        ns_application.setDelegate(application_delegate.object);
+
         return MacosApp{
             .allocator = allocator,
             .ns_application = ns_application,
