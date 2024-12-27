@@ -6,4 +6,5 @@
 
 pub const d3d12 = @import("bindings/d3d12.zig");
 pub const macos = @import("bindings/macos.zig");
+pub const metal = @import("bindings/metal.zig");
 pub const win32 = @import("bindings/win32.zig");

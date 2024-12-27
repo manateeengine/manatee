@@ -52,6 +52,8 @@ pub fn build(b: *std.Build) !void {
         .macos => {
             module.linkSystemLibrary("objc", .{});
             module.linkFramework("AppKit", .{});
+            module.linkFramework("Metal", .{});
+            // TODO: Figure out if I need MetalKit
         },
         .windows => {
             const zigwin32 = b.dependency("zigwin32", .{});
