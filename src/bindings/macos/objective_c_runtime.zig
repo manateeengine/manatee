@@ -10,13 +10,17 @@
 pub const c = @import("objective_c_runtime/c.zig");
 pub const class = @import("objective_c_runtime/class.zig");
 pub const data_types = @import("objective_c_runtime/data_types.zig");
+pub const encoding = @import("objective_c_runtime/encoding.zig");
 pub const helpers = @import("objective_c_runtime/helpers.zig");
 pub const ns_object = @import("objective_c_runtime/ns_object.zig");
 pub const objc = @import("objective_c_runtime/objc.zig");
 pub const object = @import("objective_c_runtime/object.zig");
+pub const protocol = @import("objective_c_runtime/protocol.zig");
 pub const sel = @import("objective_c_runtime/sel.zig");
 
 pub const Class = class.Class;
+pub const Encoding = encoding.Encoding;
 pub const NSObject = ns_object.NSObject;
 pub const Object = object.Object;
+pub const Protocol = protocol.Protocol;
 pub const Sel = sel.Sel;

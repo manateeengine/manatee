@@ -73,8 +73,14 @@ pub const NSApplication = struct {
         return objc.msgSend(self.object, void, "run", .{});
     }
 
+    /// Sets the application's activation policy
     pub fn setActivationPolicy(self: *NSApplication, activation_policy: NSApplicationActivationPolicy) void {
         return objc.msgSend(self.object, void, "setActivationPolicy:", .{activation_policy});
+    }
+
+    /// Sets the application's delegate
+    pub fn setDelegate(self: *NSApplication, delegate: Object) void {
+        return objc.msgSend(self.object, void, "setDelegate:", .{delegate.value});
     }
 
     pub fn deinit(self: *NSApplication) void {
@@ -120,9 +126,7 @@ pub const NSWindow = struct {
         return objc.msgSend(self.object, void, "makeKeyAndOrderFront:", .{null});
     }
 
-    /// Moves the window to the front of the screen list, within its level, and makes it the key
-    /// window; that is, it shows the window.
-    /// See: https://developer.apple.com/documentation/appkit/nswindow/makekeyandorderfront(_:)
+    /// Sets the window's title
     pub fn setTitle(self: *NSWindow, title: []const u8) void {
         const ns_string_class = objc.getClass("NSString");
         const titleNsString = objc.msgSend(ns_string_class, Object, "stringWithUTF8String:", .{title});

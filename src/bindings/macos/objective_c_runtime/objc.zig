@@ -10,7 +10,6 @@
 //! * `objc_getClassList`
 //! * `objc_copyClassList`
 //! * `objc_lookUpClass`
-//! * `objc_getClass`
 //! * `objc_getRequiredClass`
 //! * `objc_getMetaClass`
 //! * `objc_setAssociatedObject`
@@ -32,7 +31,32 @@ const std = @import("std");
 const c = @import("c.zig");
 const Class = @import("class.zig").Class;
 const Object = @import("object.zig").Object;
+const Protocol = @import("protocol.zig").Protocol;
 const Sel = @import("sel.zig").Sel;
+
+/// Creates a new protocol instance.
+/// See: https://developer.apple.com/documentation/objectivec/1418599-objc_allocateprotocol
+pub fn allocateProtocol(name: []const u8) Protocol {
+    return Protocol{
+        .value = c.objc_allocateProtocol(name.ptr),
+    };
+}
+
+/// Returns the class definition of a specified class.
+/// See: https://developer.apple.com/documentation/objectivec/1418952-objc_getclass
+pub fn getClass(name: []const u8) Class {
+    return Class{
+        .value = c.objc_getClass(name.ptr),
+    };
+}
+
+/// Returns a specified protocol.
+/// See: https://developer.apple.com/documentation/objectivec/1418870-objc_getprotocol
+pub fn getProtocol(name: []const u8) Protocol {
+    return Protocol{
+        .value = c.objc_getProtocol(name.ptr),
+    };
+}
 
 /// Sends a message with a simple return value to an instance of a class.
 /// See:
@@ -81,14 +105,6 @@ pub fn msgSend(target: anytype, comptime ReturnType: type, raw_sel: anytype, arg
     return res;
 }
 
-/// Returns the class definition of a specified class.
-/// See: https://developer.apple.com/documentation/objectivec/1418952-objc_getclass
-pub fn getClass(name: []const u8) Class {
-    return Class{
-        .value = c.objc_getClass(name.ptr),
-    };
-}
-
 /// Creates a Zig-compatible function body typing for objc_msgSend based off of the provided return
 /// type, target type, and additional args type
 ///
@@ -106,14 +122,14 @@ pub fn BuildMsgSendFnType(comptime ReturnType: type, comptime TargetType: type, 
     std.debug.assert(@sizeOf(TargetType) == @sizeOf(c.id));
 
     // Args for objc_msgSend can only be a tuple, so let's assert that since args is AnyType
-    const argsTypeInfo = @typeInfo(ArgsType).@"struct";
-    std.debug.assert(argsTypeInfo.is_tuple);
+    const args_type_info = @typeInfo(ArgsType).@"struct";
+    std.debug.assert(args_type_info.is_tuple);
 
     // Now that we've double checked our inputs, let's build our arg types
     const FnType = std.builtin.Type.Fn;
     const params: []FnType.Param = params: {
         // Let's set up an array of parameters with a length of target + selector + all other args
-        var params_arr: [argsTypeInfo.fields.len + 2]FnType.Param = undefined;
+        var params_arr: [args_type_info.fields.len + 2]FnType.Param = undefined;
 
         // The first param of objc_msgSend will always be the target type
         params_arr[0] = .{ .is_generic = false, .is_noalias = false, .type = TargetType };
@@ -123,7 +139,7 @@ pub fn BuildMsgSendFnType(comptime ReturnType: type, comptime TargetType: type, 
 
         // All remaining params will be based off of the args provided, in the exact order of the
         // tuple
-        for (argsTypeInfo.fields, 0..) |field, i| {
+        for (args_type_info.fields, 0..) |field, i| {
             params_arr[i + 2] = .{
                 .type = field.type,
                 .is_generic = false,

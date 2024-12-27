@@ -1,6 +1,9 @@
 const std = @import("std");
 
 const c = @import("c.zig");
+const encoding = @import("encoding.zig");
+const Protocol = @import("protocol.zig").Protocol;
+const Sel = @import("sel.zig").Sel;
 
 /// A struct that contains all functions prefixed by `class_` in the Objective-C Runtime, while
 /// also providing storage for the raw Objective-C class.
@@ -20,7 +23,6 @@ const c = @import("c.zig");
 /// * `class_getWeakIvarLayout`
 /// * `class_getProperty`
 /// * `class_copyPropertyList`
-/// * `class_addMethod`
 /// * `class_getInstanceMethod`
 /// * `class_getClassMethod`
 /// * `class_copyMethodList`
@@ -39,6 +41,19 @@ const c = @import("c.zig");
 pub const Class = struct {
     /// The internal Objective-C Runtime value representing the Class.
     value: c.Class,
+
+    pub fn addMethod(class: *Class, name: []const u8, imp: anytype) bool {
+        const sel = Sel.registerName(name);
+        const types = comptime encoding.encodeTypeToComptimeString(@TypeOf(imp));
+
+        return c.class_addMethod(class.value, sel.value, @ptrCast(&imp), &types);
+    }
+
+    /// Adds a protocol to a class.
+    /// See: https://developer.apple.com/documentation/objectivec/1418773-class_addprotocol
+    pub fn addProtocol(class: *Class, protocol: Protocol) bool {
+        return c.class_addProtocol(class.value, protocol.value);
+    }
 
     /// Returns the name of a class.
     /// See: https://developer.apple.com/documentation/objectivec/1418635-class_getname
