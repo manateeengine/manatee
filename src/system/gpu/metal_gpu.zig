@@ -15,11 +15,15 @@ pub const MetalGpu = struct {
         const device = metal.gpu_devices_and_work_submission.createSystemDefaultDevice();
 
         var metal_layer = macos.core_animation.CAMetalLayer.init();
+        std.debug.print("Setting Device\n", .{});
         metal_layer.setDevice(device);
+        std.debug.print("Getting Device\n", .{});
+        _ = metal_layer.getDevice();
         // if (metal_layer.getDevice().value == device.value) {
         //     std.debug.print("Device was actually set I guess\n", .{});
         // }
 
+        std.debug.print("Creating View\n", .{});
         var ns_view = macos.app_kit.NSView.init();
         ns_view.setWantsLayer(true);
         // ns_view.setLayer(metal_layer);

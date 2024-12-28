@@ -3,7 +3,7 @@
 
 const std = @import("std");
 
-const Device = @import("../metal.zig").gpu_devices_and_work_submission.Device;
+const metal = @import("../metal.zig");
 
 const objective_c_runtime = @import("objective_c_runtime.zig");
 const Class = objective_c_runtime.Class;
@@ -66,14 +66,13 @@ pub fn CAMetalLayerMixin(comptime Self: type, class_name: []const u8) type {
 
         /// Gets the Metal device responsible for the layer’s drawable resources.
         /// See: https://developer.apple.com/documentation/quartzcore/cametallayer/device
-        pub fn getDevice(self: *Self) Device {
-            var device_id = objc.msgSend(self, Id, "device", .{});
-            return Device{ .value = &device_id };
+        pub fn getDevice(self: *Self) metal.gpu_devices_and_work_submission.Device {
+            return metal.gpu_devices_and_work_submission.Device{ .value = objc.msgSend(self, *metal.c.MTLDevice, "device", .{}) };
         }
 
         /// Sets the Metal device responsible for the layer’s drawable resources.
         /// See: https://developer.apple.com/documentation/quartzcore/cametallayer/device
-        pub fn setDevice(self: *Self, device: Device) void {
+        pub fn setDevice(self: *Self, device: metal.gpu_devices_and_work_submission.Device) void {
             return objc.msgSend(self, void, "setDevice:", .{device.value});
         }
     };

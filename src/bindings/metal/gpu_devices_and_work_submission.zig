@@ -1,7 +1,7 @@
 const c = @import("c.zig");
 
 pub const Device = struct {
-    value: *c.Id,
+    value: *c.MTLDevice,
 };
 
 /// Returns the device instance Metal selects as the default.
