@@ -7,7 +7,7 @@ const App = @import("../app.zig").App;
 pub const MacosApp = struct {
     allocator: std.mem.Allocator,
     ns_application: *macos.app_kit.NSApplication,
-    ns_delegate: *macos.objective_c.NSObject,
+    ns_delegate: *macos.app_kit.NSApplicationDelegate,
 
     pub fn init(allocator: std.mem.Allocator) !MacosApp {
         // Set up the AppKit NSApplication
@@ -15,18 +15,20 @@ pub const MacosApp = struct {
         ns_application.* = macos.app_kit.NSApplication.init();
         ns_application.setActivationPolicy(macos.app_kit.NSApplicationActivationPolicy.NSApplicationActivationPolicyRegular);
 
-        // There HAS to be a better, more Zig-native way to do this, but I don't know enough about
-        // Objective-C programming to implement it, whatever it is
-        const ns_application_delegate = macos.objective_c.objc.allocateProtocol("NSApplicationDelegate");
-        var application_delegate = try allocator.create(macos.objective_c.NSObject);
-        application_delegate.* = macos.objective_c.NSObject.init();
+        // Create an AppKit NSApplicationDelegate to allow us to customize the app's behavior
+        var application_delegate = try allocator.create(macos.app_kit.NSApplicationDelegate);
+        application_delegate.* = macos.app_kit.NSApplicationDelegate.init();
         var application_delegate_class = application_delegate.getClass();
-        _ = application_delegate_class.addProtocol(ns_application_delegate);
+
+        // Since this is a game, and not a standard app, let's ensure the app itself closes after
+        // the last remaining window closes
         _ = application_delegate_class.addMethod("applicationShouldTerminateAfterLastWindowClosed:", struct {
             fn imp() callconv(.C) bool {
                 return true;
             }
         }.imp);
+
+        // Now that we've set up our delegate, let's apply it to our app!
         ns_application.setDelegate(application_delegate);
 
         return MacosApp{

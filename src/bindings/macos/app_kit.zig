@@ -98,6 +98,37 @@ pub fn NSApplicationMixin(comptime Self: type, class_name: []const u8) type {
     };
 }
 
+pub const NSApplicationDelegate = struct {
+    /// The internal Objective-C Runtime value representing the NSObject associated with the
+    /// NSApplicationDelegate
+    value: Id,
+    const ns_application_delegate_mixin = NSApplicationMixin(NSApplicationDelegate, "NSObject");
+    pub usingnamespace ns_application_delegate_mixin;
+    pub fn init() NSApplicationDelegate {
+        // TODO: Should this be getProtocol? Idk, docs for this are really bad
+        const ns_application_delegate = objc.allocateProtocol("NSApplicationDelegate");
+        var object = ns_application_delegate_mixin.new();
+        var object_class = object.getClass();
+        // TODO: Should this throw if the bool is false?
+        _ = object_class.addProtocol(ns_application_delegate);
+        return NSApplicationDelegate{
+            .value = object.value,
+        };
+    }
+
+    pub fn deinit(self: *NSApplicationDelegate) void {
+        ns_application_delegate_mixin.dealloc(self);
+        self.* = undefined;
+    }
+};
+
+pub fn NSApplicationDelegateMixin(comptime Self: type, class_name: []const u8) type {
+    return struct {
+        const ns_object_mixin = NSObjectMixin(Self, class_name);
+        pub usingnamespace ns_object_mixin;
+    };
+}
+
 /// An abstract class that forms the basis of event and command processing in AppKit.
 /// See: https://developer.apple.com/documentation/appkit/nsresponder
 pub const NSResponder = struct {
