@@ -3,7 +3,7 @@
 
 const std = @import("std");
 
-const metal = @import("../metal.zig");
+const metal = @import("metal.zig");
 
 const objective_c = @import("objective_c.zig");
 const Class = objective_c.Class;

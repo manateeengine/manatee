@@ -12,7 +12,7 @@
 //! There'll probably be more changes since I hate how instantiation / pointers work with the DXGI
 //! API, but I'm not gonna fuck with that until I at least have my triangle rendering
 
-const c = @import("../win32/c.zig");
+const c = @import("../c.zig");
 
 pub const Adapter4 = c.graphics.dxgi.IDXGIAdapter4;
 pub const Device4 = c.graphics.dxgi.IDXGIDevice4;

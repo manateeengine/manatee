@@ -1,13 +1,12 @@
 const std = @import("std");
 
-const d3d12 = @import("../../bindings.zig").d3d12;
 const win32 = @import("../../bindings.zig").win32;
 const Gpu = @import("../gpu.zig").Gpu;
 const Window = @import("../window.zig").Window;
 
-const direct3d = d3d12.direct3d;
-const direct3d12 = d3d12.direct3d12;
-const dxgi = d3d12.dxgi;
+const direct3d = win32.d3d12.direct3d;
+const direct3d12 = win32.d3d12.direct3d12;
+const dxgi = win32.d3d12.dxgi;
 
 /// A D3D12 implementation of the Manatee `GPU` interface.
 pub const D3d12Gpu = struct {

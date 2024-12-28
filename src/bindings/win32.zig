@@ -6,6 +6,7 @@
 const std = @import("std");
 const c = @import("win32/c.zig");
 
+pub const d3d12 = @import("win32/d3d12.zig");
 pub const foundation = @import("win32/foundation.zig");
 pub const system = @import("win32/system.zig");
 pub const ui = @import("win32/ui.zig");

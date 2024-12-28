@@ -1,4 +1,4 @@
-const c = @import("../win32/c.zig").graphics.direct3d12;
+const c = @import("../c.zig").graphics.direct3d12;
 
 pub const CommandQueue = c.ID3D12CommandQueue;
 pub const CommandQueueDesc = c.D3D12_COMMAND_QUEUE_DESC;
