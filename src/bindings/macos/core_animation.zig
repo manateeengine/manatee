@@ -25,7 +25,7 @@ pub const CALayer = struct {
     pub usingnamespace ca_layer_mixin;
 
     pub fn init() CALayer {
-        return ca_layer_mixin.alloc();
+        return ca_layer_mixin.new();
     }
 
     pub fn deinit(self: *CALayer) void {
@@ -50,7 +50,7 @@ pub const CAMetalLayer = struct {
     pub usingnamespace ca_metal_layer_mixin;
 
     pub fn init() CAMetalLayer {
-        return ca_metal_layer_mixin.alloc();
+        return ca_metal_layer_mixin.new();
     }
 
     pub fn deinit(self: *CAMetalLayer) void {

@@ -21,7 +21,7 @@ pub const NSObject = struct {
     pub usingnamespace ns_object_mixin;
 
     pub fn init() NSObject {
-        return ns_object_mixin.alloc();
+        return ns_object_mixin.new();
     }
 
     pub fn deinit(self: *NSObject) void {
@@ -60,6 +60,9 @@ pub fn NSObjectMixin(comptime Self: type, class_name: []const u8) type {
             objc.msgSend(self, void, "dealloc", .{});
         }
 
-        // TODO: Implement new
+        pub fn new() Self {
+            const new_object = alloc();
+            return objc.msgSend(new_object, Self, "init", .{});
+        }
     };
 }

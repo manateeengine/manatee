@@ -107,7 +107,7 @@ pub const NSResponder = struct {
     pub usingnamespace ns_responder_mixin;
 
     pub fn init() NSResponder {
-        const object = ns_responder_mixin.alloc();
+        const object = ns_responder_mixin.new();
         return NSResponder{
             .value = object.value,
         };
@@ -135,7 +135,7 @@ pub const NSView = struct {
     pub usingnamespace ns_view_mixin;
 
     pub fn init() NSView {
-        const object = ns_view_mixin.alloc();
+        const object = ns_view_mixin.new();
         return NSView{
             .value = object.value,
         };
@@ -179,7 +179,7 @@ pub const NSWindow = struct {
     pub usingnamespace ns_window_mixin;
 
     pub fn init() NSWindow {
-        const object = ns_window_mixin.alloc();
+        const object = ns_window_mixin.new();
         return NSWindow{
             .value = object.value,
         };
@@ -193,10 +193,10 @@ pub const NSWindow = struct {
     /// Initializes the window with the specified values.
     /// See: https://developer.apple.com/documentation/appkit/nswindow/init(contentrect:stylemask:backing:defer:)
     pub fn initWithContentRect(contentRect: NSRect, style: NSUInteger, backingStoreType: NSBackingStoreType, flag: bool) NSWindow {
-        const object = ns_window_mixin.alloc();
-        _ = objc.msgSend(object, Object, "initWithContentRect:styleMask:backing:defer:", .{ contentRect, style, backingStoreType, flag });
+        const new_object = ns_window_mixin.alloc();
+        _ = objc.msgSend(new_object, Object, "initWithContentRect:styleMask:backing:defer:", .{ contentRect, style, backingStoreType, flag });
         return NSWindow{
-            .value = object.value,
+            .value = new_object.value,
         };
     }
 };
