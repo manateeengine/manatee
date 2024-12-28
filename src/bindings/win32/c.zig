@@ -9,7 +9,7 @@
 //! reference material created by Microsoft, however it's still massively bloated and I'd love to
 //! eventually remove it so Manatee can maintain the same pattern across operating systems.
 
-// TODO: Replace this with the same pattern found in objective_c_runtime/c.zig once Zig can handle
+// TODO: Replace this with the same pattern found in objective_c/c.zig once Zig can handle
 // importing windows.h without compile errors, for now I'll keep using Zigwin32 though
 const zigwin32 = @import("zigwin32");
 

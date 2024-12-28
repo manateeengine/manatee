@@ -12,8 +12,8 @@ const object = @import("object.zig");
 ///
 /// NSObject is kinda weird. It was originally part of the Foundation Framework but has since
 /// become a part of the Objective-C runtime itself. It's a little more idiomatic than the rest of
-/// the code exported from objective_c_runtime, and it calls a ton of major things in the runtime.
-/// Since Zig doesn't have classes / inheritance, you'll likely see the exact patterns used in this
+/// the code exported from objective_c, and it calls a ton of major things in the runtime. Since
+/// Zig doesn't have classes / inheritance, you'll likely see the exact patterns used in this
 /// struct across all different parts of the Manatee MacOS frameworks
 pub const NSObject = struct {
     value: c.id,

@@ -7,7 +7,7 @@ const App = @import("../app.zig").App;
 pub const MacosApp = struct {
     allocator: std.mem.Allocator,
     ns_application: *macos.app_kit.NSApplication,
-    ns_delegate: *macos.objective_c_runtime.NSObject,
+    ns_delegate: *macos.objective_c.NSObject,
 
     pub fn init(allocator: std.mem.Allocator) !MacosApp {
         // Set up the AppKit NSApplication
@@ -17,9 +17,9 @@ pub const MacosApp = struct {
 
         // There HAS to be a better, more Zig-native way to do this, but I don't know enough about
         // Objective-C programming to implement it, whatever it is
-        const ns_application_delegate = macos.objective_c_runtime.objc.allocateProtocol("NSApplicationDelegate");
-        var application_delegate = try allocator.create(macos.objective_c_runtime.NSObject);
-        application_delegate.* = macos.objective_c_runtime.NSObject.init();
+        const ns_application_delegate = macos.objective_c.objc.allocateProtocol("NSApplicationDelegate");
+        var application_delegate = try allocator.create(macos.objective_c.NSObject);
+        application_delegate.* = macos.objective_c.NSObject.init();
         var application_delegate_class = application_delegate.getClass();
         _ = application_delegate_class.addProtocol(ns_application_delegate);
         _ = application_delegate_class.addMethod("applicationShouldTerminateAfterLastWindowClosed:", struct {

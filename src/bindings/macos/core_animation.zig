@@ -5,15 +5,15 @@ const std = @import("std");
 
 const metal = @import("../metal.zig");
 
-const objective_c_runtime = @import("objective_c_runtime.zig");
-const Class = objective_c_runtime.Class;
-const helpers = objective_c_runtime.helpers;
-const Id = objective_c_runtime.Id;
-const NSInteger = objective_c_runtime.data_types.NSInteger;
-const NSObjectMixin = objective_c_runtime.ns_object.NSObjectMixin;
-const NSUInteger = objective_c_runtime.data_types.NSUInteger;
-const Object = objective_c_runtime.Object;
-const objc = objective_c_runtime.objc;
+const objective_c = @import("objective_c.zig");
+const Class = objective_c.Class;
+const helpers = objective_c.helpers;
+const Id = objective_c.Id;
+const NSInteger = objective_c.data_types.NSInteger;
+const NSObjectMixin = objective_c.ns_object.NSObjectMixin;
+const NSUInteger = objective_c.data_types.NSUInteger;
+const Object = objective_c.Object;
+const objc = objective_c.objc;
 
 /// An object that manages image-based content and allows you to perform animations on that
 /// content.
