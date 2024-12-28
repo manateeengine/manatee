@@ -16,13 +16,13 @@ pub fn ObjectMixin(comptime Self: type) type {
     return struct {
         /// Returns the class name of a given object.
         /// See https://developer.apple.com/documentation/objectivec/1418547-object_getclassname
-        pub fn getClass(self: Self) Class {
+        pub fn getClass(self: *Self) Class {
             return Class{ .value = c.object_getClass(self.value) };
         }
 
         /// Returns the class name of a given object.
         /// See https://developer.apple.com/documentation/objectivec/1418547-object_getclassname
-        pub fn getClassName(self: Self) []const u8 {
+        pub fn getClassName(self: *Self) []const u8 {
             return std.mem.sliceTo(c.object_getClassName(self.value), 0);
         }
     };

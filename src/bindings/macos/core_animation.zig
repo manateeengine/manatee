@@ -10,7 +10,7 @@ const Class = objective_c_runtime.Class;
 const helpers = objective_c_runtime.helpers;
 const Id = objective_c_runtime.Id;
 const NSInteger = objective_c_runtime.data_types.NSInteger;
-const NsObjectMixin = objective_c_runtime.ns_object.NsObjectMixin;
+const NSObjectMixin = objective_c_runtime.ns_object.NSObjectMixin;
 const NSUInteger = objective_c_runtime.data_types.NSUInteger;
 const Object = objective_c_runtime.Object;
 const objc = objective_c_runtime.objc;
@@ -21,7 +21,7 @@ const objc = objective_c_runtime.objc;
 pub const CALayer = struct {
     /// The internal Objective-C Runtime value representing the CALayer
     value: Id,
-    const ca_layer_mixin = CaLayerMixin(CALayer, "CALayer");
+    const ca_layer_mixin = CALayerMixin(CALayer, "CALayer");
     pub usingnamespace ca_layer_mixin;
 
     pub fn init() CALayer {
@@ -34,9 +34,9 @@ pub const CALayer = struct {
     }
 };
 
-pub fn CaLayerMixin(comptime Self: type, class_name: []const u8) type {
+pub fn CALayerMixin(comptime Self: type, class_name: []const u8) type {
     return struct {
-        const ns_object_mixin = NsObjectMixin(Self, class_name);
+        const ns_object_mixin = NSObjectMixin(Self, class_name);
         pub usingnamespace ns_object_mixin;
     };
 }
@@ -46,7 +46,7 @@ pub fn CaLayerMixin(comptime Self: type, class_name: []const u8) type {
 pub const CAMetalLayer = struct {
     /// The internal Objective-C Runtime value representing the CAMetalLayer
     value: Id,
-    const ca_metal_layer_mixin = CaMetalLayerMixin(CAMetalLayer, "CAMetalLayer");
+    const ca_metal_layer_mixin = CAMetalLayerMixin(CAMetalLayer, "CAMetalLayer");
     pub usingnamespace ca_metal_layer_mixin;
 
     pub fn init() CAMetalLayer {
@@ -59,15 +59,22 @@ pub const CAMetalLayer = struct {
     }
 };
 
-pub fn CaMetalLayerMixin(comptime Self: type, class_name: []const u8) type {
+pub fn CAMetalLayerMixin(comptime Self: type, class_name: []const u8) type {
     return struct {
-        const ca_layer_mixin = CaLayerMixin(Self, class_name);
+        const ca_layer_mixin = CALayerMixin(Self, class_name);
         pub usingnamespace ca_layer_mixin;
+
+        /// Gets the Metal device responsible for the layer’s drawable resources.
+        /// See: https://developer.apple.com/documentation/quartzcore/cametallayer/device
+        pub fn getDevice(self: *Self) Device {
+            var device_id = objc.msgSend(self, Id, "device", .{});
+            return Device{ .value = &device_id };
+        }
 
         /// Sets the Metal device responsible for the layer’s drawable resources.
         /// See: https://developer.apple.com/documentation/quartzcore/cametallayer/device
         pub fn setDevice(self: *Self, device: Device) void {
-            return objc.msgSend(self, void, "setDevice:", .{device});
+            return objc.msgSend(self, void, "setDevice:", .{device.value});
         }
     };
 }

@@ -1,14 +1,16 @@
 //! Apple's AppKit Framework
 //! See: https://developer.apple.com/documentation/appkit
 
+const core_animation = @import("core_animation.zig");
 const foundation = @import("foundation.zig");
 const objective_c_runtime = @import("objective_c_runtime.zig");
 
+const CALayer = core_animation.CALayer;
 const Class = objective_c_runtime.Class;
 const helpers = objective_c_runtime.helpers;
 const Id = objective_c_runtime.Id;
 const NSInteger = objective_c_runtime.data_types.NSInteger;
-const NsObjectMixin = objective_c_runtime.ns_object.NsObjectMixin;
+const NSObjectMixin = objective_c_runtime.ns_object.NSObjectMixin;
 const NSUInteger = objective_c_runtime.data_types.NSUInteger;
 const NSRect = foundation.numbers_data_and_basic_values.NSRect;
 const Object = objective_c_runtime.Object;
@@ -72,7 +74,7 @@ pub const NSApplication = struct {
 
 pub fn NSApplicationMixin(comptime Self: type, class_name: []const u8) type {
     return struct {
-        const ns_object_mixin = NsObjectMixin(Self, class_name);
+        const ns_object_mixin = NSObjectMixin(Self, class_name);
         pub usingnamespace ns_object_mixin;
 
         pub fn activate(self: *Self) void {
@@ -95,6 +97,78 @@ pub fn NSApplicationMixin(comptime Self: type, class_name: []const u8) type {
     };
 }
 
+/// An abstract class that forms the basis of event and command processing in AppKit.
+/// See: https://developer.apple.com/documentation/appkit/nsresponder
+pub const NSResponder = struct {
+    /// The internal Objective-C Runtime value representing the NSResponder
+    value: Id,
+    const ns_responder_mixin = NSResponderMixin(NSResponder, "NSResponder");
+    pub usingnamespace ns_responder_mixin;
+
+    pub fn init() NSResponder {
+        const object = ns_responder_mixin.alloc();
+        return NSResponder{
+            .value = object.value,
+        };
+    }
+
+    pub fn deinit(self: *NSResponder) void {
+        ns_responder_mixin.dealloc(self);
+        self.* = undefined;
+    }
+};
+
+pub fn NSResponderMixin(comptime Self: type, class_name: []const u8) type {
+    return struct {
+        const ns_object_mixin = NSObjectMixin(Self, class_name);
+        pub usingnamespace ns_object_mixin;
+    };
+}
+
+/// The infrastructure for drawing, printing, and handling events in an app.
+/// See: https://developer.apple.com/documentation/appkit/nsview
+pub const NSView = struct {
+    /// The internal Objective-C Runtime value representing the NSView
+    value: Id,
+    const ns_view_mixin = NSViewMixin(NSView, "NSView");
+    pub usingnamespace ns_view_mixin;
+
+    pub fn init() NSView {
+        const object = ns_view_mixin.alloc();
+        return NSView{
+            .value = object.value,
+        };
+    }
+
+    pub fn deinit(self: *NSView) void {
+        ns_view_mixin.dealloc(self);
+        self.* = undefined;
+    }
+};
+
+pub fn NSViewMixin(comptime Self: type, class_name: []const u8) type {
+    return struct {
+        const ns_responder_mixin = NSResponderMixin(Self, class_name);
+        pub usingnamespace ns_responder_mixin;
+
+        /// Sets the Boolean value indicating whether the view uses a layer as its backing store.
+        pub fn getWantsLayer(self: *Self) bool {
+            // return ns_responder_mixin.getInstanceVariable(self, bool, "wantsLayer");
+            return objc.msgSend(self, bool, "wantsLayer", .{});
+        }
+
+        /// Sets the Core Animation layer that the view uses as its backing store.
+        pub fn setLayer(self: *Self, layer: anytype) void {
+            return objc.msgSend(self, void, "setLayer:", .{layer.value});
+        }
+
+        /// Sets the Boolean value indicating whether the view uses a layer as its backing store.
+        pub fn setWantsLayer(self: *Self, wants_layer: bool) void {
+            return objc.msgSend(self, void, "setWantsLayer:", .{wants_layer});
+        }
+    };
+}
+
 /// A window that an app displays on the screen.
 /// See: https://developer.apple.com/documentation/appkit/nswindow
 pub const NSWindow = struct {
@@ -110,8 +184,8 @@ pub const NSWindow = struct {
         };
     }
 
-    pub fn deinit(self: *NSApplication) void {
-        ns_window_mixin.dealloc();
+    pub fn deinit(self: *NSWindow) void {
+        ns_window_mixin.dealloc(self);
         self.* = undefined;
     }
 
@@ -128,8 +202,8 @@ pub const NSWindow = struct {
 
 pub fn NSWindowMixin(comptime Self: type, class_name: []const u8) type {
     return struct {
-        const ns_object_mixin = NsObjectMixin(Self, class_name);
-        pub usingnamespace ns_object_mixin;
+        const ns_responder_mixin = NSResponderMixin(Self, class_name);
+        pub usingnamespace ns_responder_mixin;
 
         /// Moves the window to the front of the screen list, within its level, and makes it the key
         /// window; that is, it shows the window.
@@ -138,7 +212,23 @@ pub fn NSWindowMixin(comptime Self: type, class_name: []const u8) type {
             return objc.msgSend(self, void, "makeKeyAndOrderFront:", .{null});
         }
 
-        /// Sets the window's title
+        /// Gets the window’s content view, the highest accessible view object in the window’s view
+        /// hierarchy.
+        /// See: https://developer.apple.com/documentation/appkit/nswindow/contentview
+        pub fn getContentView(self: *Self) *NSView {
+            return objc.msgSend(self, *NSView, "getContentView:", .{});
+        }
+
+        /// Sets the window’s content view, the highest accessible view object in the window’s view
+        /// hierarchy.
+        /// See: https://developer.apple.com/documentation/appkit/nswindow/contentview
+        pub fn setContentView(self: *Self, content_view: anytype) void {
+            return objc.msgSend(self, void, "setContentView:", .{content_view.value});
+        }
+
+        /// Sets the string that appears in the title bar of the window or the path to the
+        /// represented file.
+        /// See: https://developer.apple.com/documentation/appkit/nswindow/title
         pub fn setTitle(self: *Self, title: []const u8) void {
             const ns_string_class = objc.getClass("NSString");
             const titleNsString = objc.msgSend(ns_string_class, Object, "stringWithUTF8String:", .{title});

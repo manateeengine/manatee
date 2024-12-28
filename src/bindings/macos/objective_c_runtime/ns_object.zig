@@ -17,7 +17,7 @@ const object = @import("object.zig");
 /// struct across all different parts of the Manatee MacOS frameworks
 pub const NSObject = struct {
     value: c.id,
-    const ns_object_mixin = NsObjectMixin(NSObject, "NSObject");
+    const ns_object_mixin = NSObjectMixin(NSObject, "NSObject");
     pub usingnamespace ns_object_mixin;
 
     pub fn init() NSObject {
@@ -39,9 +39,9 @@ test {
     try testing.expectEqualStrings("NSObject", ns_object.getClassName());
 }
 
-pub fn NsObjectMixin(comptime Self: type, class_name: []const u8) type {
+pub fn NSObjectMixin(comptime Self: type, class_name: []const u8) type {
     return struct {
-        const object_mixin = object.ObjectMixin(NSObject);
+        const object_mixin = object.ObjectMixin(Self);
         pub usingnamespace object_mixin;
 
         /// Returns a new instance of the receiving class.

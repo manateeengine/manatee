@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const macos = @import("../../bindings.zig").macos;
+const metal = @import("../../bindings.zig").metal;
 const Gpu = @import("../gpu.zig").Gpu;
 const Window = @import("../window.zig").Window;
 
@@ -10,7 +11,22 @@ pub const MetalGpu = struct {
 
     pub fn init(allocator: std.mem.Allocator, window: *Window) !MetalGpu {
         _ = window.getNativeWindow();
-        // TODO: Implement Metal GPU
+
+        const device = metal.gpu_devices_and_work_submission.createSystemDefaultDevice();
+
+        var metal_layer = macos.core_animation.CAMetalLayer.init();
+        metal_layer.setDevice(device);
+        // if (metal_layer.getDevice().value == device.value) {
+        //     std.debug.print("Device was actually set I guess\n", .{});
+        // }
+
+        var ns_view = macos.app_kit.NSView.init();
+        ns_view.setWantsLayer(true);
+        // ns_view.setLayer(metal_layer);
+
+        // var ns_window = macos.app_kit.NSWindow{ .value = @ptrCast(@alignCast(window.getNativeWindow())) };
+        // ns_window.setContentView(&ns_view);
+
         return MetalGpu{
             .allocator = allocator,
         };
