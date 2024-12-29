@@ -47,10 +47,10 @@ pub const VulkanGpu = struct {
             .windows => &.{
                 "VK_KHR_surface",
             },
-            else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
+            else => &.{},
         };
 
-        // Create Instance
+        // Setup Instance
         const instance_create_info = vulkan.core.InstanceCreateInfo{
             .enabled_layer_count = 0,
             .p_application_info = &app_info,
@@ -60,13 +60,44 @@ pub const VulkanGpu = struct {
             .flags = vulkan.core.InstanceCreateFlags{ .enumerate_portability_bit_khr = true },
         };
 
+        // Create Instance
         const instance = try allocator.create(vulkan.core.Instance);
-        // TODO: Should this be a little more idiomatic?
-        const instance_result = vulkan.core.createInstance(&instance_create_info, null, instance);
-        if (instance_result != vulkan.core.Result.success) {
-            // TODO: I need to figure out how Zig error unions work so I can return one of those
-            // and have a more graceful failure process instead of panicking
-            @panic("Could not create Vulkan instance");
+        errdefer allocator.destroy(instance);
+        if (vulkan.core.createInstance(&instance_create_info, null, instance) != vulkan.core.Result.success) {
+            return error.instance_creation_failed;
+        }
+
+        // Get all Physical Devices (GPUs)
+        var device_count: u32 = 0;
+        _ = vulkan.core.enumeratePhysicalDevices(instance.*, &device_count, null);
+        if (device_count == 0) {
+            return error.no_physical_devices;
+        }
+
+        const devices = try allocator.alloc(vulkan.c.VkPhysicalDevice, device_count);
+        defer allocator.free(devices);
+        if (vulkan.core.enumeratePhysicalDevices(instance.*, &device_count, devices.ptr) != vulkan.core.Result.success) {
+            return error.device_enumeration_failed;
+        }
+
+        // Iterate over all physical devices and select the one with the highest score
+        var best_physical_device: ?vulkan.core.PhysicalDevice = null;
+        var best_physical_device_score: u32 = 0;
+
+        for (devices) |device_handle| {
+            const device = try vulkan.core.PhysicalDevice.init(allocator, device_handle);
+
+            if (device.score > best_physical_device_score) {
+                best_physical_device = device;
+                best_physical_device_score = device.score;
+            }
+
+            // TODO: Refactor this into a custom struct and add queue family info. Probably follow
+            // https://docs.vulkan.org/tutorial/latest/03_Drawing_a_triangle/00_Setup/03_Physical_devices_and_queue_families.html
+        }
+
+        if (best_physical_device == null) {
+            return error.no_suitable_device;
         }
 
         return VulkanGpu{

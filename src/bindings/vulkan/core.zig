@@ -1,5 +1,6 @@
 //! Zig bindings for Vulkan's vulkan_core.h
 
+const std = @import("std");
 const c = @import("c.zig");
 
 // Constants
@@ -8,11 +9,53 @@ const c = @import("c.zig");
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VK_API_VERSION_1_0.html
 pub const api_version_1_0 = makeApiVersion(0, 1, 0, 0);
 
+pub const invalid_queue_family_index = std.math.maxInt(u32);
+
 /// Maximum length of a layer of extension name string
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/MAX_EXTENSION_NAME_SIZE.html
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VK_MAX_EXTENSION_NAME_SIZE.html
 pub const max_extension_name_size = c.VK_MAX_EXTENSION_NAME_SIZE;
 
+/// Length of a physical device name string
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VK_MAX_PHYSICAL_DEVICE_NAME_SIZE.html
+pub const max_physical_device_name_size = c.VK_MAX_PHYSICAL_DEVICE_NAME_SIZE;
+
+/// Length of a universally unique device or driver build identifier
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VK_UUID_SIZE.html
+pub const uuid_size = c.VK_UUID_SIZE;
+
 // Enums
+
+/// Supported physical device types
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPhysicalDeviceType.html
+pub const PhysicalDeviceType = enum(i32) {
+    other = 0,
+    integrated_gpu = 1,
+    discrete_gpu = 2,
+    virtual_gpu = 3,
+    cpu = 4,
+};
+
+/// Bitmask specifying capabilities of queues in a queue family
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkQueueFlagBits.html
+pub const QueueFlagBits = enum(u32) {
+    /// Specifies that queues in this queue family support graphics operations.
+    graphics_bit = 0x00000001,
+    /// Specifies that queues in this queue family support compute operations.
+    compute_bit = 0x00000002,
+    /// Specifies that queues in this queue family support transfer operations.
+    transfer_bit = 0x00000004,
+    /// Specifies that queues in this queue family support sparse memory management operations.
+    sparse_binding_bit = 0x00000008,
+    /// Specifies that queues in this queue family support the VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT
+    /// bit.
+    protected_bit = 0x00000010,
+    /// Specifies that queues in this queue family support video decode operations.
+    video_decode_bit_khr = 0x00000020,
+    /// Specifies that queues in this queue family support video encode operations.
+    video_encode_bit_khr = 0x00000040,
+    /// Specifies that queues in this queue family support optical flow operations.
+    optical_flow_bit_nv = 0x00000100,
+};
 
 /// Vulkan command return codes
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkResult.html
@@ -67,6 +110,19 @@ pub const Result = enum(i32) {
     pipeline_binary_missing_khr = 1000483000,
     error_not_enough_space_khr = -1000483000,
     result_max_enum = 0x7fffffff,
+};
+
+/// Bitmask of VkSampleCountFlagBits
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkSampleCountFlags.html
+pub const SampleCountFlags = enum(u32) {
+    @"1_bit" = 0x00000001,
+    @"2_bit" = 0x00000002,
+    @"4_bit" = 0x00000004,
+    @"8_bit" = 0x00000008,
+    @"16_bit" = 0x00000010,
+    @"32_bit" = 0x00000020,
+    @"64_bit" = 0x00000040,
+    max_enum = 0x7FFFFFFF,
 };
 
 /// Vulkan structure types (pname:sType)
@@ -1014,10 +1070,14 @@ pub const StructureType = enum(i32) {
 
 // Types
 
+/// Opaque handle to an instance object
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkInstance.html
 pub const Instance = c.VkInstance;
 
 // Structs
 
+/// Structure specifying application information
+/// https://registry.khronos.org/vulkan/specs/latest/man/html/VkApplicationInfo.html
 pub const ApplicationInfo = extern struct {
     /// A StructureType value identifying this structure.
     s_type: StructureType = .application_info,
@@ -1053,6 +1113,17 @@ pub const ExtensionProperties = extern struct {
     spec_version: u32,
 };
 
+/// Structure specifying a three-dimensional extent
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkExtent3D.html
+pub const Extent3d = extern struct {
+    /// The width of the extent.
+    width: u32,
+    /// The height of the extent.
+    height: u32,
+    /// The depth of the extent.
+    depth: u32,
+};
+
 /// Structure specifying parameters of a newly created instance
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkInstanceCreateInfo.html
 pub const InstanceCreateInfo = extern struct {
@@ -1081,6 +1152,9 @@ pub const InstanceCreateInfo = extern struct {
     pp_extension_names: ?[*]const ?[*:0]const u8 = null,
 };
 
+/// Bitmask of VkInstanceCreateFlagBits
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkInstanceCreateFlags.html
+/// TODO: Rewrite this, I hate this
 pub const InstanceCreateFlags = packed struct(u32) {
     enumerate_portability_bit_khr: bool = false,
     _reserved_bit_2: bool = false,
@@ -1116,6 +1190,295 @@ pub const InstanceCreateFlags = packed struct(u32) {
     _reserved_bit_32: bool = false,
 };
 
+/// A Vulkan Physical Device handle, as well as the device's features, properties, and Queue types.
+pub const PhysicalDevice = struct {
+    /// Opaque handle to a physical device object
+    /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPhysicalDevice.html
+    handle: c.VkPhysicalDevice,
+    /// Fine-grained features that can be supported by an implementation
+    features: PhysicalDeviceFeatures,
+    /// Physical device properties
+    properties: PhysicalDeviceProperties,
+    /// TODO: Write doc comment
+    queue_family_index_graphics: u32,
+    /// A Manatee-specific numeric score for the device. Whichever device has the highest score
+    /// will be used when creating the GPU context
+    score: u32,
+
+    pub fn init(allocator: std.mem.Allocator, handle: c.VkPhysicalDevice) !PhysicalDevice {
+        var device_properties: PhysicalDeviceProperties = undefined;
+        getPhysicalDeviceProperties(handle, &device_properties);
+
+        var device_features: PhysicalDeviceFeatures = undefined;
+        getPhysicalDeviceFeatures(handle, &device_features);
+
+        var queue_family_property_count: u32 = 0;
+        getPhysicalDeviceQueueFamilyProperties(handle, &queue_family_property_count, null);
+
+        const queue_family_properties = try allocator.alloc(QueueFamilyProperties, queue_family_property_count);
+        getPhysicalDeviceQueueFamilyProperties(handle, &queue_family_property_count, queue_family_properties.ptr);
+        defer allocator.free(queue_family_properties);
+
+        var queue_family_index_graphics: u32 = invalid_queue_family_index;
+
+        for (queue_family_properties, 0..) |queue_family, idx| {
+            if (queue_family_index_graphics == invalid_queue_family_index and @intFromEnum(queue_family.queue_flags) & @intFromEnum(QueueFlagBits.graphics_bit) != 0) {
+                queue_family_index_graphics = @intCast(idx);
+            }
+
+            // TODO: More will come here as I progress with the tutorial
+        }
+
+        var score: u32 = 0;
+        // Discrete GPUs have a significant performance advantage
+        if (device_properties.device_type == .discrete_gpu) {
+            score += 1000;
+        }
+
+        // Maximum possible size of textures affects graphics quality
+        score += device_properties.limits.max_image_dimension_2d;
+
+        // Application can't function without geometry shaders. Set the score back to 0 if the
+        // device doesn't support them
+        if (device_features.geometry_shader == 0) {
+            score = 0;
+        }
+
+        return PhysicalDevice{
+            .handle = handle,
+            .features = device_features,
+            .properties = device_properties,
+            .queue_family_index_graphics = queue_family_index_graphics,
+            .score = score,
+        };
+    }
+
+    pub fn deinit(self: *PhysicalDevice) void {
+        self.* = undefined;
+    }
+};
+
+/// Structure describing the fine-grained features that can be supported by an implementation
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPhysicalDeviceFeatures.html
+/// TODO: Copy over per-property descriptions... it's gonna be a lot
+pub const PhysicalDeviceFeatures = extern struct {
+    robust_buffer_access: u32,
+    full_draw_index_uint_32: u32,
+    image_cube_array: u32,
+    independent_blend: u32,
+    geometry_shader: u32,
+    tessellation_shader: u32,
+    sample_rate_shading: u32,
+    dual_src_blend: u32,
+    logic_op: u32,
+    multi_draw_indirect: u32,
+    draw_indirect_first_instance: u32,
+    depth_clamp: u32,
+    depth_bias_clamp: u32,
+    fill_mode_non_solid: u32,
+    depth_bounds: u32,
+    wide_lines: u32,
+    large_points: u32,
+    alpha_to_one: u32,
+    multi_viewport: u32,
+    sampler_anisotropy: u32,
+    texture_compression_etc_2: u32,
+    texture_compression_astc_ldr: u32,
+    texture_compression_bc: u32,
+    occlusion_query_precise: u32,
+    pipeline_statistics_query: u32,
+    vertex_pipeline_stores_and_atomics: u32,
+    fragment_stores_and_atomics: u32,
+    shader_tessellation_and_geometry_point_size: u32,
+    shader_image_gather_extended: u32,
+    shader_storage_image_extended_formats: u32,
+    shader_storage_image_multisample: u32,
+    shader_storage_image_read_without_format: u32,
+    shader_storage_image_write_without_format: u32,
+    shader_uniform_buffer_array_dynamic_indexing: u32,
+    shader_sampled_image_array_dynamic_indexing: u32,
+    shader_storage_buffer_array_dynamic_indexing: u32,
+    shader_storage_image_array_dynamic_indexing: u32,
+    shader_clip_distance: u32,
+    shader_cull_distance: u32,
+    shader_float64: u32,
+    shader_int64: u32,
+    shader_int16: u32,
+    shader_resource_residency: u32,
+    shader_resource_min_lod: u32,
+    sparse_binding: u32,
+    sparse_residency_buffer: u32,
+    sparse_residency_image2d: u32,
+    sparse_residency_image3d: u32,
+    sparse_residency_2_samples: u32,
+    sparse_residency_4_samples: u32,
+    sparse_residency_8_samples: u32,
+    sparse_residency_16_samples: u32,
+    sparse_residency_aliased: u32,
+    variable_multisample_rate: u32,
+    inherited_queries: u32,
+};
+
+/// Structure reporting implementation-dependent physical device limits
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPhysicalDeviceLimits.html
+/// TODO: Copy over per-property descriptions... it's gonna be a lot
+pub const PhysicalDeviceLimits = extern struct {
+    max_image_dimension_1d: u32,
+    max_image_dimension_2d: u32,
+    max_image_dimension_3d: u32,
+    max_image_dimension_cube: u32,
+    max_image_array_layers: u32,
+    max_texel_buffer_elements: u32,
+    max_uniform_buffer_range: u32,
+    max_storage_buffer_range: u32,
+    max_push_constants_size: u32,
+    max_memory_allocation_count: u32,
+    max_sampler_allocation_count: u32,
+    buffer_image_granularity: u64,
+    sparse_address_space_size: u64,
+    max_bound_descriptor_sets: u32,
+    max_per_stage_descriptor_samplers: u32,
+    max_per_stage_descriptor_uniform_buffers: u32,
+    max_per_stage_descriptor_storage_buffers: u32,
+    max_per_stage_descriptor_sampled_images: u32,
+    max_per_stage_descriptor_storage_images: u32,
+    max_per_stage_descriptor_input_attachments: u32,
+    max_per_stage_resources: u32,
+    max_descriptor_set_samplers: u32,
+    max_descriptor_set_uniform_buffers: u32,
+    max_descriptor_set_uniform_buffers_dynamic: u32,
+    max_descriptor_set_storage_buffers: u32,
+    max_descriptor_set_storage_buffers_dynamic: u32,
+    max_descriptor_set_sampled_images: u32,
+    max_descriptor_set_storage_images: u32,
+    max_descriptor_set_input_attachments: u32,
+    max_vertex_input_attributes: u32,
+    max_vertex_input_bindings: u32,
+    max_vertex_input_attribute_offset: u32,
+    max_vertex_input_binding_stride: u32,
+    max_vertex_output_components: u32,
+    max_tessellation_generation_level: u32,
+    max_tessellation_patch_size: u32,
+    max_tessellation_control_per_vertex_input_components: u32,
+    max_tessellation_control_per_vertex_output_components: u32,
+    max_tessellation_control_per_patch_output_components: u32,
+    max_tessellation_control_total_output_components: u32,
+    max_tessellation_evaluation_input_components: u32,
+    max_tessellation_evaluation_output_components: u32,
+    max_geometry_shader_invocations: u32,
+    max_geometry_input_components: u32,
+    max_geometry_output_components: u32,
+    max_geometry_output_vertices: u32,
+    max_geometry_total_output_components: u32,
+    max_fragment_input_components: u32,
+    max_fragment_output_attachments: u32,
+    max_fragment_dual_src_attachments: u32,
+    max_fragment_combined_output_resources: u32,
+    max_compute_shared_memory_size: u32,
+    max_compute_work_group_count: [3]u32,
+    max_compute_work_group_invocations: u32,
+    max_compute_work_group_size: [3]u32,
+    sub_pixel_precision_bits: u32,
+    sub_texel_precision_bits: u32,
+    mipmap_precision_bits: u32,
+    max_draw_indexed_index_value: u32,
+    max_draw_indirect_count: u32,
+    max_sampler_lod_bias: f32,
+    max_sampler_anisotropy: f32,
+    max_viewports: u32,
+    max_viewport_dimensions: [2]u32,
+    viewport_bounds_range: [2]f32,
+    viewport_sub_pixel_bits: u32,
+    min_memory_map_alignment: usize,
+    min_texel_buffer_offset_alignment: u64,
+    min_uniform_buffer_offset_alignment: u64,
+    min_storage_buffer_offset_alignment: u64,
+    min_texel_offset: i32,
+    max_texel_offset: u32,
+    min_texel_gather_offset: i32,
+    max_texel_gather_offset: u32,
+    min_interpolation_offset: f32,
+    max_interpolation_offset: f32,
+    sub_pixel_interpolation_offset_bits: u32,
+    max_framebuffer_width: u32,
+    max_framebuffer_height: u32,
+    max_framebuffer_layers: u32,
+    framebuffer_color_sample_counts: SampleCountFlags,
+    framebuffer_depth_sample_counts: SampleCountFlags,
+    framebuffer_stencil_sample_counts: SampleCountFlags,
+    framebuffer_no_attachments_sample_counts: SampleCountFlags,
+    max_color_attachments: u32,
+    sampled_image_color_sample_counts: SampleCountFlags,
+    sampled_image_integer_sample_counts: SampleCountFlags,
+    sampled_image_depth_sample_counts: SampleCountFlags,
+    sampled_image_stencil_sample_counts: SampleCountFlags,
+    storage_image_sample_counts: SampleCountFlags,
+    max_sample_mask_words: u32,
+    timestamp_compute_and_graphics: u32,
+    timestamp_period: f32,
+    max_clip_distances: u32,
+    max_cull_distances: u32,
+    max_combined_clip_and_cull_distances: u32,
+    discrete_queue_priorities: u32,
+    point_size_range: [2]f32,
+    line_width_range: [2]f32,
+    point_size_granularity: f32,
+    line_width_granularity: f32,
+    strict_lines: u32,
+    standard_sample_locations: u32,
+    optimal_buffer_copy_offset_alignment: u64,
+    optimal_buffer_copy_row_pitch_alignment: u64,
+    non_coherent_atom_size: u64,
+};
+
+/// Structure specifying physical device properties
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPhysicalDeviceProperties.html
+pub const PhysicalDeviceProperties = extern struct {
+    /// The version of Vulkan supported by the device, encoded as described in the Vulkan Spec.
+    api_version: u32,
+    /// The vendor-specified version of the driver.
+    driver_version: u32,
+    /// A unique identifier for the vendor (see below) of the physical device.
+    vendor_id: u32,
+    /// A unique identifier for the physical device among devices available from the vendor.
+    device_id: u32,
+    /// A `PhysicalDeviceType` specifying the type of device.
+    device_type: PhysicalDeviceType,
+    /// An array of max_physical_device_name_size char containing a null-terminated UTF-8 string
+    /// which is the name of the device.
+    device_name: [max_physical_device_name_size]u8,
+    /// An array of VK_UUID_SIZE uint8_t values representing a universally unique identifier for
+    /// the device.
+    pipeline_cache_uuid: [uuid_size]u8,
+    /// The PhysicalDeviceLimits structure specifying device-specific limits of the physical
+    /// device.
+    limits: PhysicalDeviceLimits,
+    /// the PhysicalDeviceSparseProperties structure specifying various sparse related properties
+    /// of the physical device.
+    sparse_properties: PhysicalDeviceSparseProperties,
+};
+
+/// Structure specifying physical device sparse memory properties
+/// https://registry.khronos.org/vulkan/specs/latest/man/html/VkPhysicalDeviceSparseProperties.html
+/// TODO: Copy over per-property descriptions
+pub const PhysicalDeviceSparseProperties = extern struct {
+    residency_standard_2d_block_shape: u32,
+    residency_standard_2d_multisample_block_shape: u32,
+    residency_standard_3d_block_shape: u32,
+    residency_aligned_mip_size: u32,
+    residency_non_resident_strict: u32,
+};
+
+/// Structure providing information about a queue family
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkQueueFamilyProperties.html
+pub const QueueFamilyProperties = extern struct {
+    /// A bitmask of QueueFlagBits indicating capabilities of the queues in this queue family.
+    queue_flags: QueueFlagBits,
+    queue_count: u32,
+    timestamp_valid_bits: u32,
+    min_image_transfer_granularity: Extent3d,
+};
+
 // Functions
 
 pub fn createInstance(create_info: *const InstanceCreateInfo, allocator: ?*c.VkAllocationCallbacks, instance: *Instance) Result {
@@ -1128,10 +1491,35 @@ pub fn destroyInstance(instance: Instance, allocator: ?*c.VkAllocationCallbacks)
 }
 
 /// Returns up to requested number of global extension properties
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkEnumeratePhysicalDevices.html
+pub fn enumeratePhysicalDevices(instance: Instance, physical_device_count: *u32, physical_devices: ?[*]c.VkPhysicalDevice) Result {
+    const result = c.vkEnumeratePhysicalDevices(instance, physical_device_count, @ptrCast(physical_devices));
+    return @enumFromInt(result);
+}
+
+/// Enumerates the physical devices accessible to a Vulkan instance
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkEnumerateInstanceExtensionProperties.html
 pub fn enumerateInstanceExtensionProperties(layer_name: ?[*:0]const u8, property_count: *u32, properties: ?[*]ExtensionProperties) Result {
     const result = c.vkEnumerateInstanceExtensionProperties(layer_name, property_count, @ptrCast(properties));
     return @enumFromInt(result);
+}
+
+/// Reports capabilities of a physical device
+/// https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceProperties.html
+pub fn getPhysicalDeviceFeatures(physical_device: c.VkPhysicalDevice, features: *PhysicalDeviceFeatures) void {
+    return c.vkGetPhysicalDeviceFeatures(physical_device, @ptrCast(features));
+}
+
+/// Returns properties of a physical device
+/// https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceProperties.html
+pub fn getPhysicalDeviceProperties(physical_device: c.VkPhysicalDevice, properties: *PhysicalDeviceProperties) void {
+    return c.vkGetPhysicalDeviceProperties(physical_device, @ptrCast(properties));
+}
+
+/// Reports properties of the queues of the specified physical device
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceQueueFamilyProperties.html
+pub fn getPhysicalDeviceQueueFamilyProperties(physical_device: c.VkPhysicalDevice, queue_family_property_count: *u32, queue_family_properties: ?[*]QueueFamilyProperties) void {
+    return c.vkGetPhysicalDeviceQueueFamilyProperties(physical_device, queue_family_property_count, @ptrCast(queue_family_properties));
 }
 
 /// Construct an API version number

@@ -9,6 +9,7 @@
     "anytype",
     "callconv",
     "comptime",
+    "errdefer",
     "deinit",
     "noalias",
     "orelse",
