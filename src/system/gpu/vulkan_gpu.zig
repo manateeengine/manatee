@@ -44,6 +44,9 @@ pub const VulkanGpu = struct {
                 "VK_KHR_get_physical_device_properties2",
                 "VK_EXT_metal_surface",
             },
+            .windows => &.{
+                "VK_KHR_surface",
+            },
             else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
         };
 
