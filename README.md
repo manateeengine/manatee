@@ -15,13 +15,21 @@ manually.
 - [Zig Nightly](https://ziglang.org/download/). See
   [A Note About Zig Versioning](#A%20NoteA%20AboutA%20ZigA%20Versioning) for my rationale as to why
   Manatee requires the nightly build of Zig.
+- The [Vulkan SDK](https://vulkan.lunarg.com/sdk/home). Currently, Vulkan is the only supported GPU
+  API, as it allows me to focus on only learning one GPU API while I build Manatee, and it has
+  generally pretty decent support across all of the platforms that Manatee plans on supporting in
+  its initial release. In the future, we plan on extending this, and adding support for D3D12 (for
+  Win32 and Xbox Devices), Metal (for Apple Devices), and OpenGL (for any devices that lack Vulkan
+  support), but that'll launch in a post-v0 world.
+  - Note: You may need to set the environment variable `VK_SDK_PATH` to equal the path of your
+    Vulkan SDK installation, as sometimes the installer doesn't do this.
 - All OS-Specific prerequisites for your target operating system
 
 ### MacOS Prerequisites
 
 - [XCode](https://developer.apple.com/xcode/). XCode contains the Objective-C runtime and all of
   the required MacOS frameworks for building games, such as AppKit and Metal.
-  - Note, although it shares the name, XCode is not the same thing as the XCode command line
+  - Note: although it shares the name, XCode is not the same thing as the XCode command line
     tools. These tools include various utilities for development on MacOS, such as Git and the
     Apple LLVM. These tools should be included with an XCode install, and if you have these tools
     already installed but don't have XCode installed, you won't need to uninstall them to install

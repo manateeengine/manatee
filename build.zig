@@ -13,6 +13,9 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    // Get All Environment Variables (We'll use these later to link the Vulkan SDK)
+    const env_map = try std.process.getEnvMap(b.allocator);
+
     // Setup Zig Module
     const module = b.addModule("manatee", .{
         .root_source_file = b.path("src/manatee.zig"),
@@ -48,12 +51,22 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
+    // Add Vulkan SDK Paths to Library / Include Paths
+    if (env_map.get("VK_SDK_PATH")) |path| {
+        module.addLibraryPath(.{ .cwd_relative = try std.fmt.allocPrint(b.allocator, "{s}/lib", .{path}) });
+        module.addIncludePath(.{ .cwd_relative = try std.fmt.allocPrint(b.allocator, "{s}/include", .{path}) });
+    } else {
+        std.debug.panic("Env var VK_SDK_PATH not found. Please ensure you've installed the Vulkan SDK and added it to your PATH", .{});
+    }
+
+    // Link System-Specific Libraries to Module
     switch (builtin.os.tag) {
         .macos => {
             module.linkSystemLibrary("objc", .{});
             module.linkFramework("AppKit", .{});
             module.linkFramework("Metal", .{});
-            // TODO: Figure out if I need MetalKit
+            // If I try to link Vulkan, everything breaks, but linking MoltenVK by itself works
+            module.linkSystemLibrary("MoltenVK", .{});
         },
         .windows => {
             const zigwin32 = b.dependency("zigwin32", .{});
@@ -62,6 +75,8 @@ pub fn build(b: *std.Build) !void {
             // This is only added so ZLS autocomplete will actually work lol
             exe_check.root_module.addImport("zigwin32", zigwin32.module("zigwin32"));
             exe.root_module.addImport("zigwin32", zigwin32.module("zigwin32"));
+
+            module.linkSystemLibrary("vulkan-1", .{});
         },
         else => {},
     }

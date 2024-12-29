@@ -5,4 +5,5 @@
 //! Manatee's paradigm of "zero dependencies wherever possible"
 
 pub const macos = @import("bindings/macos.zig");
+pub const vulkan = @import("bindings/vulkan.zig");
 pub const win32 = @import("bindings/win32.zig");

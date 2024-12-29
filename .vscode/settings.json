@@ -7,11 +7,13 @@
     "anyerror",
     "anyopaque",
     "anytype",
+    "callconv",
     "comptime",
     "deinit",
     "noalias",
     "orelse",
     "usingnamespace",
+    "usize",
     "vtable",
     // GPU Words
     "swapchain",
@@ -40,7 +42,10 @@
     // Names / Credits
     "hashimoto",
     "objz",
+    "spanzeri",
     "superauguste",
+    // Misc
+    "vkguide",
   ],
   "cSpell.ignorePaths": [
     ".git/{info,lfs,logs,refs,objects}/**",

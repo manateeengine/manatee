@@ -39,8 +39,12 @@ pub const Gpu = struct {
 /// targeted OS.
 pub fn getGpuInterfaceStruct() type {
     const base_app = switch (builtin.os.tag) {
-        .macos => @import("gpu/metal_gpu.zig").MetalGpu,
-        .windows => @import("gpu/d3d12_gpu.zig").D3d12Gpu,
+        // TODO: Post-v0, add native Metal support
+        // .macos => @import("gpu/metal_gpu.zig").MetalGpu,
+        .macos => @import("gpu/vulkan_gpu.zig").VulkanGpu,
+        // TODO: Post-v0, add native D3D12 support
+        // .windows => @import("gpu/d3d12_gpu.zig").D3d12Gpu,
+        .windows => @import("gpu/vulkan_gpu.zig").VulkanGpu,
         else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
     };
 
