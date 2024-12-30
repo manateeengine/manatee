@@ -121,6 +121,7 @@ pub const VulkanGpu = struct {
         const self: *VulkanGpu = @ptrCast(@alignCast(ctx));
         vulkan.core.destroyInstance(self.instance.*, null);
         self.allocator.destroy((self.instance));
+        self.allocator.destroy(self.instance);
         self.allocator.destroy(self);
     }
 };

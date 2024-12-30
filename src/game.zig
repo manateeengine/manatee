@@ -33,20 +33,38 @@ pub const Game = struct {
         // Create an app for the current platform
         const BaseApp = system.app.getAppInterfaceStruct();
         var base_app = try allocator.create(BaseApp);
-        base_app.* = try BaseApp.init(allocator);
+
+        {
+            errdefer std.debug.print("DEALLOCATING BASE APP\n", .{});
+            base_app.* = try BaseApp.init(allocator);
+        }
+
         const app = base_app.app();
+        errdefer app.deinit();
 
         // Create the main application window
         const BaseWindow = system.window.getWindowInterfaceStruct();
         const base_window = try allocator.create(BaseWindow);
-        base_window.* = try BaseWindow.init(allocator, .{ .title = config.title });
+
+        {
+            errdefer std.debug.print("DEALLOCATING BASE WINDOW\n", .{});
+            base_window.* = try BaseWindow.init(allocator, .{ .title = config.title });
+        }
+
         var main_window = base_window.window();
+        errdefer main_window.deinit();
 
         // Connect to the GPU
         const BaseGpu = system.gpu.getGpuInterfaceStruct();
         const base_gpu = try allocator.create(BaseGpu);
-        base_gpu.* = try BaseGpu.init(allocator, &main_window);
+
+        {
+            errdefer allocator.destroy(base_gpu);
+            base_gpu.* = try BaseGpu.init(allocator, &main_window);
+        }
+
         const gpu = base_gpu.gpu();
+        errdefer gpu.deinit();
 
         return Game{
             .allocator = allocator,
