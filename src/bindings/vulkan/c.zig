@@ -13,8 +13,11 @@ pub const VK_UUID_SIZE: usize = 16;
 
 // Types
 
+pub const VkDevice = enum(usize) { null_handle = 0, _ };
 pub const VkInstance = enum(usize) { null_handle = 0, _ };
 pub const VkPhysicalDevice = enum(usize) { null_handle = 0, _ };
+pub const VkQueue = enum(usize) { null_handle = 0, _ };
+pub const VkSurfaceKHR = enum(u64) { null_handle = 0, _ };
 
 // Structs
 
@@ -31,6 +34,28 @@ pub const VkApplicationInfo = extern struct {
     apiVersion: u32,
 };
 
+pub const VkDeviceCreateInfo = extern struct {
+    sType: i32,
+    pNext: ?*const anyopaque,
+    flags: u32,
+    queueCreateInfoCount: i32,
+    pQueueCreateInfos: ?[*]const VkDeviceQueueCreateInfo,
+    enabledLayerCount: u32,
+    ppEnabledLayerNames: ?[*]const [*:0]const u8,
+    enabledExtensionCount: u32,
+    ppEnabledExtensionNames: ?[*]const [*:0]const u8,
+    pEnabledFeatures: ?*VkPhysicalDeviceFeatures,
+};
+
+pub const VkDeviceQueueCreateInfo = extern struct {
+    sType: i32,
+    pNext: ?*const anyopaque,
+    flags: u32,
+    queueFamilyIndex: u32,
+    queueCount: u32,
+    pQueuePriorities: [*]f32,
+};
+
 pub const VkExtensionProperties = extern struct {
     extensionName: [VK_MAX_EXTENSION_NAME_SIZE]u8,
     specVersion: u32,
@@ -40,6 +65,13 @@ pub const VkExtent3D = extern struct {
     width: u32,
     height: u32,
     depth: u32,
+};
+
+pub const VkMetalSurfaceCreateInfoEXT = extern struct {
+    sType: i32,
+    pNext: ?*const anyopaque,
+    flags: u32,
+    pLayer: *const anyopaque,
 };
 
 pub const VkInstanceCreateInfo = extern struct {
@@ -249,13 +281,21 @@ pub const VkQueueFamilyProperties = extern struct {
 
 // Functions
 
-pub extern fn vkCreateInstance(pCreateInfo: *const VkInstanceCreateInfo, pAllocator: ?*VkAllocationCallbacks, *VkInstance) i32; // VkResult
+pub extern fn vkCreateDevice(physicalDevice: VkPhysicalDevice, *const VkDeviceCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pDevice: *VkDevice) i32; // VkResult;
 
-pub extern fn vkDestroyInstance(instance: VkInstance, pAllocator: ?*VkAllocationCallbacks) void;
+pub extern fn vkCreateMetalSurfaceEXT(instance: VkInstance, pCreateInfo: *const VkMetalSurfaceCreateInfoEXT, pAllocator: ?*const VkAllocationCallbacks, pSurface: *VkSurfaceKHR) i32; // VkResult
+
+pub extern fn vkCreateInstance(pCreateInfo: *const VkInstanceCreateInfo, pAllocator: ?*const VkAllocationCallbacks, *VkInstance) i32; // VkResult
+
+pub extern fn vkDestroyDevice(device: VkDevice, pAllocator: ?*const VkAllocationCallbacks) void;
+
+pub extern fn vkDestroyInstance(instance: VkInstance, pAllocator: ?*const VkAllocationCallbacks) void;
 
 pub extern fn vkEnumeratePhysicalDevices(instance: VkInstance, pPhysicalDeviceCount: *u32, pPhysicalDevices: ?[*]VkPhysicalDevice) i32; // VkResult
 
 pub extern fn vkEnumerateInstanceExtensionProperties(pLayerName: ?[*:0]const u8, pPropertyCount: *u32, pProperties: ?[*]VkExtensionProperties) callconv(vulkan_callconv) i32; // VkResult
+
+pub extern fn vkGetDeviceQueue(device: VkDevice, queueFamilyIndex: u32, queueIndex: u32, pQueue: *VkQueue) void;
 
 pub extern fn vkGetPhysicalDeviceFeatures(physicalDevice: VkPhysicalDevice, pFeatures: *VkPhysicalDeviceFeatures) void;
 

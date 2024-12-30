@@ -47,6 +47,9 @@ pub fn NSObjectMixin(comptime Self: type, class_name: []const u8) type {
         /// Returns a new instance of the receiving class.
         pub fn alloc() Self {
             const class = objc.getClass(class_name);
+            // if (std.mem.eql(u8, class_name, "CAMetalLayer")) {
+            std.debug.print("Class {s} ID {*}\n", .{ class_name, class.value });
+            // }
             return objc.msgSend(class, Self, "alloc", .{});
         }
 

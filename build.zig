@@ -63,6 +63,8 @@ pub fn build(b: *std.Build) !void {
     switch (builtin.os.tag) {
         .macos => {
             module.linkSystemLibrary("objc", .{});
+            // QuartzCore includes CoreAnimation
+            module.linkFramework("QuartzCore", .{});
             module.linkFramework("AppKit", .{});
             module.linkFramework("Metal", .{});
             // If I try to link Vulkan, everything breaks, but linking MoltenVK by itself works

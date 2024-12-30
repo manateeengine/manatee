@@ -1,5 +1,6 @@
 //! Zig bindings for Vulkan's vulkan_core.h
 
+const builtin = @import("builtin");
 const std = @import("std");
 const c = @import("c.zig");
 
@@ -1070,16 +1071,24 @@ pub const StructureType = enum(i32) {
 
 // Types
 
+/// Opaque handle to a device object
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkDevice.html
+pub const Device = c.VkDevice;
+
 /// Opaque handle to an instance object
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkInstance.html
 pub const Instance = c.VkInstance;
+
+/// Opaque handle to a queue object
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkQueue.html
+pub const Queue = c.VkQueue;
 
 // Structs
 
 /// Structure specifying application information
 /// https://registry.khronos.org/vulkan/specs/latest/man/html/VkApplicationInfo.html
 pub const ApplicationInfo = extern struct {
-    /// A StructureType value identifying this structure.
+    /// A `StructureType` value identifying this structure.
     s_type: StructureType = .application_info,
     /// An optional pointer to a structure extending this structure.
     p_next: ?*const anyopaque = null,
@@ -1100,6 +1109,56 @@ pub const ApplicationInfo = extern struct {
     /// The patch version number specified in apiVersion is ignored when creating an instance
     /// object. The variant version of the instance must match that requested in apiVersion.
     api_version: u32,
+};
+
+/// Structure specifying parameters of a newly created device
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkDeviceCreateInfo.html
+pub const DeviceCreateInfo = extern struct {
+    /// A `StructureType` value identifying this structure.
+    s_type: StructureType = StructureType.device_create_info,
+    /// An optional pointer to a structure extending this structure.
+    p_next: ?*const anyopaque = null,
+    /// Reserved for future use.
+    flags: u32 = 0,
+    /// The unsigned integer size of the p_queue_create_infos array.
+    queue_create_info_count: i32,
+    /// A pointer to an array of DeviceQueueCreateInfo structures describing the queues that are
+    /// requested to be created along with the logical device.
+    p_queue_create_infos: ?[*]const DeviceQueueCreateInfo,
+    /// DEPRECATED: `enabled_layer_count` is deprecated and ignored.
+    enabled_layer_count: u32 = 0,
+    /// DEPRECATED: `pp_enabled_layer_names` is deprecated and ignored
+    pp_enabled_layer_names: ?[*]const [*:0]const u8 = null,
+    /// The number of device extensions to enable.
+    enabled_extension_count: u32 = 0,
+    /// An optional pointer to an array of enabledExtensionCount null-terminated UTF-8 strings
+    /// containing the names of extensions to enable for the created device.
+    pp_enabled_extension_names: ?[*]const [*:0]const u8 = null,
+    /// An optional pointer to a PhysicalDeviceFeatures structure containing boolean indicators of
+    /// all the features to be enabled.
+    p_enabled_features: ?*PhysicalDeviceFeatures,
+};
+
+/// Structure specifying parameters of a newly created device queue
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkDeviceQueueCreateInfo.html
+pub const DeviceQueueCreateInfo = extern struct {
+    /// A `StructureType` value identifying this structure.
+    s_type: StructureType = StructureType.device_queue_create_info,
+    /// An optional pointer to a structure extending this structure.
+    p_next: ?*const anyopaque = null,
+    /// A bitmask indicating behavior of the queues.
+    flags: u32 = 0,
+    /// An unsigned integer indicating the index of the queue family in which to create the queues
+    /// on this device. This index corresponds to the index of an element of the
+    /// `p_queue_family_properties` array that was returned by
+    /// `getPhysicalDeviceQueueFamilyProperties`.
+    queue_family_index: u32,
+    /// An unsigned integer specifying the number of queues to create in the queue family indicated
+    /// by queueFamilyIndex, and with the behavior specified by flags.
+    queue_count: u32,
+    /// A pointer to an array of queueCount normalized floating-point values, specifying priorities
+    /// of work that will be submitted to each created queue.
+    p_queue_priorities: [*]const f32,
 };
 
 /// Structure specifying an extension properties
@@ -1216,8 +1275,8 @@ pub const PhysicalDevice = struct {
         getPhysicalDeviceQueueFamilyProperties(handle, &queue_family_property_count, null);
 
         const queue_family_properties = try allocator.alloc(QueueFamilyProperties, queue_family_property_count);
-        getPhysicalDeviceQueueFamilyProperties(handle, &queue_family_property_count, queue_family_properties.ptr);
         defer allocator.free(queue_family_properties);
+        getPhysicalDeviceQueueFamilyProperties(handle, &queue_family_property_count, queue_family_properties.ptr);
 
         var queue_family_index_graphics: u32 = invalid_queue_family_index;
 
@@ -1238,10 +1297,12 @@ pub const PhysicalDevice = struct {
         // Maximum possible size of textures affects graphics quality
         score += device_properties.limits.max_image_dimension_2d;
 
-        // Application can't function without geometry shaders. Set the score back to 0 if the
-        // device doesn't support them
+        // We want to heavily discourage use of devices that don't have geometry shader support,
+        // however for Apple devices with integrated GPUs (such as M1 MacBooks), their GPU will
+        // never support geometry shaders (due to a lack of support in the Metal API), so we'll set
+        // the device's score to 1 just to be on the safe side
         if (device_features.geometry_shader == 0) {
-            score = 0;
+            score = 1;
         }
 
         return PhysicalDevice{
@@ -1479,13 +1540,87 @@ pub const QueueFamilyProperties = extern struct {
     min_image_transfer_granularity: Extent3d,
 };
 
+/// A Vulkan SurfaceKHR handle with cross-platform initialization
+pub const SurfaceKHR = struct {
+    const macos = @import("../macos.zig");
+    allocator: std.mem.Allocator,
+    /// Opaque handle to a surface object
+    /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkSurfaceKHR.html
+    handle: *c.VkSurfaceKHR,
+    /// A CoreAnimation CAMetalLayer, only required on MacOS
+    macos_ca_metal_layer: ?*macos.core_animation.CAMetalLayer,
+    /// An AppKit NSView, only required on MacOS
+    macos_ns_view: ?*macos.app_kit.NSView,
+
+    pub fn init(allocator: std.mem.Allocator, instance: *Instance, native_window: *anyopaque) !SurfaceKHR {
+        switch (builtin.target.os.tag) {
+            .macos => {
+                const metal = @import("metal.zig");
+
+                const ca_metal_layer = try allocator.create(macos.core_animation.CAMetalLayer);
+                errdefer allocator.destroy(ca_metal_layer);
+                ca_metal_layer.* = macos.core_animation.CAMetalLayer.init();
+
+                var ns_view = try allocator.create(macos.app_kit.NSView);
+                errdefer allocator.destroy(ns_view);
+                ns_view.* = macos.app_kit.NSView.init();
+                ns_view.setWantsLayer(true);
+                ns_view.setLayer(ca_metal_layer.*);
+
+                // ns_window has already been previously allocated, we're temporarily re-creating
+                // it for the sole purpose of sending an Objective-C message to attach the newly
+                // created view
+                var ns_window = try allocator.create(macos.app_kit.NSWindow);
+                errdefer allocator.destroy(ns_window);
+                ns_window.* = macos.app_kit.NSWindow{ .value = @ptrCast(@alignCast(native_window)) };
+                ns_window.setContentView(ns_view.*);
+
+                const surface_khr_handle = try allocator.create(c.VkSurfaceKHR);
+
+                const metal_surface_create_info = metal.MetalSurfaceCreateInfo{
+                    .p_layer = @ptrCast(&ca_metal_layer.*.value),
+                };
+
+                if (metal.createMetalSurface(instance.*, &metal_surface_create_info, null, surface_khr_handle) != .success) {
+                    return error.metal_surface_creation_failed;
+                }
+
+                return SurfaceKHR{
+                    .allocator = allocator,
+                    .handle = @ptrCast(surface_khr_handle),
+                    .macos_ca_metal_layer = ca_metal_layer,
+                    .macos_ns_view = ns_view,
+                };
+            },
+            else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
+        }
+    }
+};
+
 // Functions
 
+/// Create a new device instance
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateDevice.html
+pub fn createDevice(physical_device: PhysicalDevice, device_create_info: *const DeviceCreateInfo, allocator: ?*c.VkAllocationCallbacks, device: *Device) Result {
+    const result = c.vkCreateDevice(physical_device.handle, @ptrCast(device_create_info), allocator, device);
+    return @enumFromInt(result);
+}
+
+/// Create a new Vulkan instance
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateInstance.html
 pub fn createInstance(create_info: *const InstanceCreateInfo, allocator: ?*c.VkAllocationCallbacks, instance: *Instance) Result {
     const result = c.vkCreateInstance(@ptrCast(create_info), allocator, @ptrCast(instance));
     return @enumFromInt(result);
 }
 
+/// Destroy a logical device
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyDevice.html
+pub fn destroyDevice(device: Device, allocator: ?*c.VkAllocationCallbacks) void {
+    return c.vkDestroyDevice(device, allocator);
+}
+
+/// Destroy an instance of Vulkan
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyInstance.html
 pub fn destroyInstance(instance: Instance, allocator: ?*c.VkAllocationCallbacks) void {
     return c.vkDestroyInstance(instance, allocator);
 }
@@ -1502,6 +1637,12 @@ pub fn enumeratePhysicalDevices(instance: Instance, physical_device_count: *u32,
 pub fn enumerateInstanceExtensionProperties(layer_name: ?[*:0]const u8, property_count: *u32, properties: ?[*]ExtensionProperties) Result {
     const result = c.vkEnumerateInstanceExtensionProperties(layer_name, property_count, @ptrCast(properties));
     return @enumFromInt(result);
+}
+
+/// Get a queue handle from a device
+/// https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetDeviceQueue.html
+pub fn getDeviceQueue(device: Device, queue_family_index: u32, queue_index: u32, queue: *Queue) void {
+    return c.vkGetDeviceQueue(device, queue_family_index, queue_index, queue);
 }
 
 /// Reports capabilities of a physical device

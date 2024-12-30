@@ -22,11 +22,10 @@ const Window = @import("../window.zig").Window;
 /// Vulkan (and other external dynamic libraries) can be used within Zig.
 pub const VulkanGpu = struct {
     allocator: std.mem.Allocator,
+    device: *vulkan.core.Device,
     instance: *vulkan.core.Instance,
 
     pub fn init(allocator: std.mem.Allocator, window: *Window) !VulkanGpu {
-        _ = window; // We'll absolutely be using this later!
-
         // Setup App
         const app_info = vulkan.core.ApplicationInfo{
             .api_version = vulkan.core.api_version_1_0,
@@ -86,6 +85,7 @@ pub const VulkanGpu = struct {
 
         for (devices) |device_handle| {
             const device = try vulkan.core.PhysicalDevice.init(allocator, device_handle);
+            errdefer allocator.destroy(device);
 
             if (device.score > best_physical_device_score) {
                 best_physical_device = device;
@@ -96,12 +96,86 @@ pub const VulkanGpu = struct {
             // https://docs.vulkan.org/tutorial/latest/03_Drawing_a_triangle/00_Setup/03_Physical_devices_and_queue_families.html
         }
 
-        if (best_physical_device == null) {
-            return error.no_suitable_device;
+        // Setup Logical Device Queue
+        const queue_priorities: [1]f32 = .{1.0};
+        const queue_create_infos: [1]vulkan.core.DeviceQueueCreateInfo = .{vulkan.core.DeviceQueueCreateInfo{
+            .queue_count = 1,
+            .queue_family_index = best_physical_device.?.queue_family_index_graphics,
+            .p_queue_priorities = &queue_priorities,
+        }};
+
+        // Setup Logical Device
+        const device_create_info = vulkan.core.DeviceCreateInfo{
+            .queue_create_info_count = queue_create_infos.len,
+            .p_queue_create_infos = &queue_create_infos,
+            .p_enabled_features = &best_physical_device.?.features,
+        };
+
+        // Create Logical Device
+        const device = try allocator.create(vulkan.core.Device);
+        errdefer allocator.destroy(device);
+        if (vulkan.core.createDevice(best_physical_device.?, &device_create_info, null, device) != .success) {
+            return error.device_creation_failed;
         }
+
+        // Get Graphics Queue Handle
+        const graphics_queue = try allocator.create(vulkan.core.Queue);
+        defer allocator.destroy(graphics_queue); // Probably remove this
+        errdefer allocator.destroy(graphics_queue);
+        vulkan.core.getDeviceQueue(device.*, best_physical_device.?.queue_family_index_graphics, 0, graphics_queue);
+
+        // Creating the Window Surface
+        // We'll need to execute different functions depending on which platform our build is
+        // targeting, as well as create different surface parameters. Luckily for us, the final
+        // surface output is platform-agnostic, so we only really care about that during the setup
+        // phase here
+
+        // Let's start be allocating memory for our surface
+        const surface = try vulkan.core.SurfaceKHR.init(allocator, instance, window.getNativeWindow());
+        _ = surface;
+
+        // // Now let's create the appropriate surface for the target OS, throwing a compile error if
+        // // we're not using a supported OS
+        // switch (builtin.target.os.tag) {
+        //     .macos => {
+        //         const macos = @import("../../bindings/macos.zig");
+
+        //         std.debug.print("Creating Metal Layer", .{});
+        //         // Create a CAMetalLayer
+        //         var ca_metal_layer = try allocator.create(macos.core_animation.CAMetalLayer);
+        //         ca_metal_layer.* = macos.core_animation.CAMetalLayer.init();
+
+        //         std.debug.print("Creating View", .{});
+        //         // Create an NSView and set its layer to the newly created CAMetalLayer
+        //         var ns_view = macos.app_kit.NSView.init();
+        //         ns_view.setWantsLayer(true);
+        //         ns_view.setLayer(ca_metal_layer.*);
+
+        //         std.debug.print("Creating Window", .{});
+        //         // Create a reference to the native window and set the window's contentView to the
+        //         // newly created NSView
+        //         var ns_window = macos.app_kit.NSWindow{ .value = @ptrCast(@alignCast(window.getNativeWindow())) };
+        //         ns_window.setContentView(ns_view);
+
+        //         std.debug.print("Creating Vulkan Metal Surface", .{});
+        //         // Finally create the Vulkan surface and assign the CAMetalLayer to it
+        //         const metal_surface_create_info = vulkan.metal.MetalSurfaceCreateInfo{
+        //             .p_layer = @ptrCast(&ca_metal_layer.value),
+        //         };
+
+        //         if (vulkan.metal.createMetalSurface(instance.*, &metal_surface_create_info, null, surface) != .success) {
+        //             return error.metal_surface_creation_failed;
+        //         }
+        //     },
+        //     .windows => {
+        //         // TODO: Push, switch machines, and test this on windows
+        //     },
+        //     else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
+        // }
 
         return VulkanGpu{
             .allocator = allocator,
+            .device = device,
             .instance = instance,
         };
     }
@@ -119,8 +193,9 @@ pub const VulkanGpu = struct {
 
     fn deinit(ctx: *anyopaque) void {
         const self: *VulkanGpu = @ptrCast(@alignCast(ctx));
+        vulkan.core.destroyDevice(self.device.*, null);
+        self.allocator.destroy(self.device);
         vulkan.core.destroyInstance(self.instance.*, null);
-        self.allocator.destroy((self.instance));
         self.allocator.destroy(self.instance);
         self.allocator.destroy(self);
     }
