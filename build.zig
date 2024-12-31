@@ -71,13 +71,6 @@ pub fn build(b: *std.Build) !void {
             module.linkSystemLibrary("MoltenVK", .{});
         },
         .windows => {
-            const zigwin32 = b.dependency("zigwin32", .{});
-            module.addImport("zigwin32", zigwin32.module("zigwin32"));
-
-            // This is only added so ZLS autocomplete will actually work lol
-            exe_check.root_module.addImport("zigwin32", zigwin32.module("zigwin32"));
-            exe.root_module.addImport("zigwin32", zigwin32.module("zigwin32"));
-
             module.linkSystemLibrary("vulkan-1", .{});
         },
         else => {},

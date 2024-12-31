@@ -29,6 +29,7 @@
     // Windows words (I hate Hungarian Notation SO much)
     "dxgi",
     "HINSTANCE",
+    "HMENU",
     "HREDRAW",
     "IDXGI",
     "lpfn",
@@ -46,6 +47,7 @@
     "spanzeri",
     "superauguste",
     // Misc
+    "descendents", // How is this not in the default dictionary
     "vkguide",
   ],
   "cSpell.ignorePaths": [

@@ -33,10 +33,10 @@ pub const Win32App = struct {
     fn run(ctx: *anyopaque) void {
         const self: *Win32App = @ptrCast(@alignCast(ctx));
         _ = self; // I'll probably need this at some point lol
-        var msg: win32.ui.windows_and_messaging.Msg = undefined;
-        while (win32.ui.windows_and_messaging.getMessageW(&msg, null, 0, 0) > 0) {
-            _ = win32.ui.windows_and_messaging.translateMessage(&msg);
-            _ = win32.ui.windows_and_messaging.dispatchMessageW(&msg);
+        var msg: win32.wnd_msg.Msg = undefined;
+        while (win32.wnd_msg.getMessageW(&msg, null, 0, 0)) {
+            _ = win32.wnd_msg.translateMessage(&msg);
+            _ = win32.wnd_msg.dispatchMessageW(&msg);
         }
     }
 };
