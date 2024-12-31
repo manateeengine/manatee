@@ -26,6 +26,7 @@ pub const VulkanGpu = struct {
     instance: *vulkan.core.Instance,
 
     pub fn init(allocator: std.mem.Allocator, window: *Window) !VulkanGpu {
+        _ = window; // autofix
         // Setup App
         const app_info = vulkan.core.ApplicationInfo{
             .api_version = vulkan.core.api_version_1_0,
@@ -45,6 +46,7 @@ pub const VulkanGpu = struct {
             },
             .windows => &.{
                 "VK_KHR_surface",
+                "VK_KHR_win32_surface",
             },
             else => &.{},
         };
@@ -131,8 +133,8 @@ pub const VulkanGpu = struct {
         // phase here
 
         // Let's start be allocating memory for our surface
-        const surface = try vulkan.core.SurfaceKHR.init(allocator, instance, window.getNativeWindow());
-        _ = surface;
+        // const surface = try vulkan.core.SurfaceKHR.init(allocator, instance, window.getNativeWindow());
+        // _ = surface;
 
         // // Now let's create the appropriate surface for the target OS, throwing a compile error if
         // // we're not using a supported OS

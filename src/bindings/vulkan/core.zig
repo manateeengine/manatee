@@ -1540,62 +1540,95 @@ pub const QueueFamilyProperties = extern struct {
     min_image_transfer_granularity: Extent3d,
 };
 
+// pub const Win32SurfaceCreateInfoKHR = extern struct {
+//     const win32 = @import("../win32.zig");
+//     sType: StructureType = StructureType.win32_surface_create_info_khr,
+//     flags: u32 = 0,
+//     hinstance: win32.foundation.HInstance,
+//     hwnd: win32.foundation.HWnd,
+// };
+
 /// A Vulkan SurfaceKHR handle with cross-platform initialization
-pub const SurfaceKHR = struct {
-    const macos = @import("../macos.zig");
-    allocator: std.mem.Allocator,
-    /// Opaque handle to a surface object
-    /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkSurfaceKHR.html
-    handle: *c.VkSurfaceKHR,
-    /// A CoreAnimation CAMetalLayer, only required on MacOS
-    macos_ca_metal_layer: ?*macos.core_animation.CAMetalLayer,
-    /// An AppKit NSView, only required on MacOS
-    macos_ns_view: ?*macos.app_kit.NSView,
+// pub const SurfaceKHR = struct {
+//     allocator: std.mem.Allocator,
+//     /// Opaque handle to a surface object
+//     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkSurfaceKHR.html
+//     handle: *c.VkSurfaceKHR,
+//     /// A CoreAnimation CAMetalLayer, only required on MacOS
+//     /// macos_ca_metal_layer: ?*macos.core_animation.CAMetalLayer,
+//     /// An AppKit NSView, only required on MacOS
+//     /// macos_ns_view: ?*macos.app_kit.NSView,
+//     pub fn init(allocator: std.mem.Allocator, instance: *Instance, native_window: *anyopaque) !SurfaceKHR {
+//         switch (builtin.target.os.tag) {
+//             .macos => {
+//                 const macos = @import("../macos.zig");
+//                 const metal = @import("metal.zig");
 
-    pub fn init(allocator: std.mem.Allocator, instance: *Instance, native_window: *anyopaque) !SurfaceKHR {
-        switch (builtin.target.os.tag) {
-            .macos => {
-                const metal = @import("metal.zig");
+//                 const ca_metal_layer = try allocator.create(macos.core_animation.CAMetalLayer);
+//                 errdefer allocator.destroy(ca_metal_layer);
+//                 ca_metal_layer.* = macos.core_animation.CAMetalLayer.init();
 
-                const ca_metal_layer = try allocator.create(macos.core_animation.CAMetalLayer);
-                errdefer allocator.destroy(ca_metal_layer);
-                ca_metal_layer.* = macos.core_animation.CAMetalLayer.init();
+//                 var ns_view = try allocator.create(macos.app_kit.NSView);
+//                 errdefer allocator.destroy(ns_view);
+//                 ns_view.* = macos.app_kit.NSView.init();
+//                 ns_view.setWantsLayer(true);
+//                 ns_view.setLayer(ca_metal_layer.*);
 
-                var ns_view = try allocator.create(macos.app_kit.NSView);
-                errdefer allocator.destroy(ns_view);
-                ns_view.* = macos.app_kit.NSView.init();
-                ns_view.setWantsLayer(true);
-                ns_view.setLayer(ca_metal_layer.*);
+//                 // ns_window has already been previously allocated, we're temporarily re-creating
+//                 // it for the sole purpose of sending an Objective-C message to attach the newly
+//                 // created view
+//                 var ns_window = try allocator.create(macos.app_kit.NSWindow);
+//                 errdefer allocator.destroy(ns_window);
+//                 ns_window.* = macos.app_kit.NSWindow{ .value = @ptrCast(@alignCast(native_window)) };
+//                 ns_window.setContentView(ns_view.*);
 
-                // ns_window has already been previously allocated, we're temporarily re-creating
-                // it for the sole purpose of sending an Objective-C message to attach the newly
-                // created view
-                var ns_window = try allocator.create(macos.app_kit.NSWindow);
-                errdefer allocator.destroy(ns_window);
-                ns_window.* = macos.app_kit.NSWindow{ .value = @ptrCast(@alignCast(native_window)) };
-                ns_window.setContentView(ns_view.*);
+//                 const surface_khr_handle = try allocator.create(c.VkSurfaceKHR);
 
-                const surface_khr_handle = try allocator.create(c.VkSurfaceKHR);
+//                 const metal_surface_create_info = metal.MetalSurfaceCreateInfo{
+//                     .p_layer = @ptrCast(&ca_metal_layer.*.value),
+//                 };
 
-                const metal_surface_create_info = metal.MetalSurfaceCreateInfo{
-                    .p_layer = @ptrCast(&ca_metal_layer.*.value),
-                };
+//                 if (metal.createMetalSurface(instance.*, &metal_surface_create_info, null, surface_khr_handle) != .success) {
+//                     return error.metal_surface_creation_failed;
+//                 }
 
-                if (metal.createMetalSurface(instance.*, &metal_surface_create_info, null, surface_khr_handle) != .success) {
-                    return error.metal_surface_creation_failed;
-                }
+//                 return SurfaceKHR{
+//                     .allocator = allocator,
+//                     .handle = @ptrCast(surface_khr_handle),
+//                     // .macos_ca_metal_layer = ca_metal_layer,
+//                     // .macos_ns_view = ns_view,
+//                 };
+//             },
+//             .windows => {
+//                 const win32 = @import("../win32.zig");
 
-                return SurfaceKHR{
-                    .allocator = allocator,
-                    .handle = @ptrCast(surface_khr_handle),
-                    .macos_ca_metal_layer = ca_metal_layer,
-                    .macos_ns_view = ns_view,
-                };
-            },
-            else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
-        }
-    }
-};
+//                 const surface_khr_handle = try allocator.create(c.VkSurfaceKHR);
+//                 errdefer allocator.destroy(surface_khr_handle);
+
+//                 const hwnd: win32.foundation.HWnd = @ptrCast(@alignCast(native_window));
+//                 const h_instance_ptr_size: usize = @intCast(win32.ui.windows_and_messaging.getWindowLongW(hwnd, win32.ui.windows_and_messaging.WindowLongPtrIndex.P_HINSTANCE));
+//                 const h_instance: win32.foundation.HInstance = @ptrFromInt(h_instance_ptr_size);
+
+//                 const win32_surface_create_info = Win32SurfaceCreateInfoKHR{
+//                     .hwnd = hwnd,
+//                     .hinstance = h_instance,
+//                 };
+
+//                 if (createWin32SurfaceKHR(instance.*, &win32_surface_create_info, null, surface_khr_handle) != .success) {
+//                     return error.metal_surface_creation_failed;
+//                 }
+
+//                 return SurfaceKHR{
+//                     .allocator = allocator,
+//                     .handle = @ptrCast(surface_khr_handle),
+//                     // .macos_ca_metal_layer = null,
+//                     // .macos_ns_view = null,
+//                 };
+//             },
+//             else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
+//         }
+//     }
+// };
 
 // Functions
 
@@ -1612,6 +1645,13 @@ pub fn createInstance(create_info: *const InstanceCreateInfo, allocator: ?*c.VkA
     const result = c.vkCreateInstance(@ptrCast(create_info), allocator, @ptrCast(instance));
     return @enumFromInt(result);
 }
+
+// /// Create a new Vulkan instance
+// /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateInstance.html
+// pub fn createWin32SurfaceKHR(instance: Instance, create_info: *const Win32SurfaceCreateInfoKHR, allocator: ?*const c.VkAllocationCallbacks, surface: *c.VkSurfaceKHR) Result {
+//     const result = c.vkCreateWin32SurfaceKHR(instance, @ptrCast(create_info), allocator, surface);
+//     return @enumFromInt(result);
+// }
 
 /// Destroy a logical device
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyDevice.html

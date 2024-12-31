@@ -279,6 +279,14 @@ pub const VkQueueFamilyProperties = extern struct {
     minImageTransferGranularity: VkExtent3D,
 };
 
+pub const VkWin32SurfaceCreateInfoKHR = extern struct {
+    const win32 = @import("../win32.zig");
+    sType: i32,
+    flags: u32,
+    hinstance: win32.foundation.HInstance,
+    hwnd: win32.foundation.HWnd,
+};
+
 // Functions
 
 pub extern fn vkCreateDevice(physicalDevice: VkPhysicalDevice, *const VkDeviceCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pDevice: *VkDevice) i32; // VkResult;
@@ -286,6 +294,8 @@ pub extern fn vkCreateDevice(physicalDevice: VkPhysicalDevice, *const VkDeviceCr
 pub extern fn vkCreateMetalSurfaceEXT(instance: VkInstance, pCreateInfo: *const VkMetalSurfaceCreateInfoEXT, pAllocator: ?*const VkAllocationCallbacks, pSurface: *VkSurfaceKHR) i32; // VkResult
 
 pub extern fn vkCreateInstance(pCreateInfo: *const VkInstanceCreateInfo, pAllocator: ?*const VkAllocationCallbacks, *VkInstance) i32; // VkResult
+
+pub extern fn vkCreateWin32SurfaceKHR(instance: VkInstance, pCreateInfo: *const VkWin32SurfaceCreateInfoKHR, pAllocator: ?*const VkAllocationCallbacks, surface: *VkSurfaceKHR) i32; // VkResult
 
 pub extern fn vkDestroyDevice(device: VkDevice, pAllocator: ?*const VkAllocationCallbacks) void;
 
