@@ -54,6 +54,24 @@ pub const Responder = opaque {
     }
 };
 
+/// The infrastructure for drawing, printing, and handling events in an app.
+/// Original: `NSView`
+/// See: https://developer.apple.com/documentation/appkit/nsview
+pub const View = opaque {
+    const Self = @This();
+    pub usingnamespace ViewMixin(Self);
+
+    /// TODO: Figure out how I want to document manatee-specific init functions
+    pub fn init() *Self {
+        return Self.new("NSView");
+    }
+
+    /// TODO: Figure out how I want to document manatee-specific deinit functions
+    pub fn deinit(self: *Self) void {
+        return self.dealloc();
+    }
+};
+
 /// An abstract class that forms the basis of event and command processing in AppKit.
 /// Original: `NSWindow`
 /// See: https://developer.apple.com/documentation/appkit/nsresponder
@@ -270,12 +288,46 @@ pub fn ViewMixin(comptime Self: type) type {
         const inherited_methods = ResponderMixin(Self);
         pub usingnamespace inherited_methods;
 
-        // TODO: Implement NSWindow class's "Creating a View Object" section
-        // TODO: Implement NSWindow class's "Configuring the View" section
-        // TODO: Implement NSWindow class's "Managing the View's Content" section
-        // TODO: Implement NSWindow class's "Managing Interactions" section
-        // TODO: Implement NSWindow class's "Instance Properties" section
-        // TODO: Implement NSWindow class's "Instance Methods" section
+        // TODO: Implement NSView class's "Creating a View Object" section
+
+        // Methods defined under the NSView class's "Configuring the View" section
+
+        /// Retrieves the Boolean value indicating whether the view uses a layer as its backing
+        /// store.
+        /// Original: `NSView.wantsLayer`
+        /// See: https://developer.apple.com/documentation/appkit/nsview/wantslayer
+        pub fn getWantsLayer(self: *Self) bool {
+            return msgSend(self, bool, Sel.init("wantsLayer"), .{});
+        }
+
+        /// Sets the Boolean value indicating whether the view uses a layer as its backing
+        /// store.
+        /// Original: `NSView.wantsLayer`
+        /// See: https://developer.apple.com/documentation/appkit/nsview/wantslayer
+        pub fn setWantsLayer(self: *Self, wants_layer: bool) void {
+            return msgSend(self, void, Sel.init("setWantsLayer:"), .{wants_layer});
+        }
+
+        /// Retrieves the Core Animation layer that the view uses as its backing store.
+        /// Original: `NSView.layer`
+        /// See: https://developer.apple.com/documentation/appkit/nsview/wantslayer
+        pub fn getLayer(self: *Self) *anyopaque {
+            return msgSend(self, *anyopaque, Sel.init("layer"), .{});
+        }
+
+        /// Sets the Core Animation layer that the view uses as its backing store.
+        /// Original: `NSView.layer`
+        /// See: https://developer.apple.com/documentation/appkit/nsview/wantslayer
+        pub fn setLayer(self: *Self, layer: *anyopaque) void {
+            return msgSend(self, void, Sel.init("setLayer:"), .{layer});
+        }
+
+        // TODO: Implement remaining items in NSView class's "Configuring the View" section
+
+        // TODO: Implement NSView class's "Managing the View's Content" section
+        // TODO: Implement NSView class's "Managing Interactions" section
+        // TODO: Implement NSView class's "Instance Properties" section
+        // TODO: Implement NSView class's "Instance Methods" section
     };
 }
 
@@ -300,6 +352,25 @@ pub fn WindowMixin(comptime Self: type) type {
         // TODO: Implement wrapper for initWithContentRect:styleMask:backing:defer:screen:
 
         // TODO: Implement NSWindow class's "Managing a Window's Behavior" section
+
+        // Methods defined under the NSWindow class's "Configuring the Window's Content" section
+
+        /// Retrieves the window’s content view, the highest accessible view object in the window’s
+        /// view hierarchy.
+        /// Original: `NSWindow.contentView`
+        /// See: https://developer.apple.com/documentation/appkit/nswindow/contentview
+        pub fn getContentView(self: *Self) *anyopaque {
+            return msgSend(self, *anyopaque, Sel.init("contentView"), .{});
+        }
+
+        /// Sets the window’s content view, the highest accessible view object in the window’s view
+        /// hierarchy.
+        /// Original: `NSWindow.contentView`
+        /// See: https://developer.apple.com/documentation/appkit/nswindow/contentview
+        pub fn setWantsLayer(self: *Self, content_view: *anyopaque) void {
+            return msgSend(self, bool, Sel.init("setContentView:"), .{content_view});
+        }
+
         // TODO: Implement NSWindow class's "Configuring the Window's Appearance" section
         // TODO: Implement NSWindow class's "Accessing Window Information" section
         // TODO: Implement NSWindow class's "Getting Layout Information" section

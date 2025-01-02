@@ -36,8 +36,8 @@ pub const MetalLayer = opaque {
     pub usingnamespace MetalLayerMixin(Self);
 
     /// TODO: Figure out how I want to document manatee-specific init functions
-    pub fn init() *Self {
-        return Self.new("CAMetalLayer");
+    pub fn init() !*Self {
+        return try Self.new("CAMetalLayer");
     }
 
     /// TODO: Figure out how I want to document manatee-specific deinit functions
