@@ -67,7 +67,6 @@ bindings/
 ├── <binding_name>/
 │   ├── <section_1_name>/
 │   │   └── <subsection_name>.zig
-│   ├── c.zig // Opaque type definitions
 │   ├── <section_1_name>.zig
 │   └── <section_2_name>.zig
 └── <binding_name>.zig
@@ -90,7 +89,7 @@ being sorted alphabetically:
 1. Opaque Types
 2. Constants
 3. Enums
-4. Structs
+4. Structs / Mixins
 5. Functions
 6. Other
 
@@ -112,5 +111,6 @@ possible, however I do a little bit of transformation, including:
 3. TODO: Write docs on idiomatic transformations (`init`, `deinit`, `create`, `destroy`, etc)
 4. TODO: Write docs on compensation for bindings requiring class inheritance
 
-The notable exception to this is the `c.zig` file. The functions defined in that file should always
-have identical names to their original API functions so they can be correctly linked at runtime.
+The notable exception to this is functions marked as `extern`. These functions should always have
+identical names to their original API functions so they can be correctly linked at runtime, and
+should be private, or wrapped with a correctly-named function if public.

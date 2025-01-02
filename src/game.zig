@@ -35,7 +35,7 @@ pub const Game = struct {
         var base_app = try allocator.create(BaseApp);
 
         {
-            errdefer std.debug.print("DEALLOCATING BASE APP\n", .{});
+            errdefer allocator.destroy(base_app);
             base_app.* = try BaseApp.init(allocator);
         }
 
@@ -47,7 +47,7 @@ pub const Game = struct {
         const base_window = try allocator.create(BaseWindow);
 
         {
-            errdefer std.debug.print("DEALLOCATING BASE WINDOW\n", .{});
+            errdefer allocator.destroy(base_window);
             base_window.* = try BaseWindow.init(allocator, .{ .title = config.title });
         }
 
@@ -79,7 +79,7 @@ pub const Game = struct {
     pub fn run(self: *Game) !void {
         _ = self.main_window.getNativeWindow();
         // Start the application event loop
-        self.app.run();
+        try self.app.run();
     }
 
     pub fn deinit(

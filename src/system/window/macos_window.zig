@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const macos = @import("../../bindings.zig").macos;
+const apple = @import("../../bindings.zig").apple;
 const window = @import("../window.zig");
 
 const Window = window.Window;
@@ -11,16 +11,10 @@ const WindowDimensions = window.WindowDimensions;
 pub const MacosWindow = struct {
     allocator: std.mem.Allocator,
     dimensions: WindowDimensions,
-    ns_window: *macos.app_kit.NSWindow,
+    native_window: *apple.app_kit.Window,
 
     pub fn init(allocator: std.mem.Allocator, config: WindowConfig) !MacosWindow {
-        const style_mask = @intFromEnum(macos.app_kit.NSWindowStyleMask.NSWindowStyleMaskTitled) |
-            @intFromEnum(macos.app_kit.NSWindowStyleMask.NSWindowStyleMaskClosable) |
-            @intFromEnum(macos.app_kit.NSWindowStyleMask.NSWindowStyleMaskMiniaturizable) |
-            @intFromEnum(macos.app_kit.NSWindowStyleMask.NSWindowStyleMaskResizable);
-
-        var ns_window = try allocator.create(macos.app_kit.NSWindow);
-        ns_window.* = macos.app_kit.NSWindow.initWithContentRect(
+        const window_instance = try apple.app_kit.Window.init(
             .{
                 .origin = .{
                     .x = 0,
@@ -31,13 +25,13 @@ pub const MacosWindow = struct {
                     .width = @floatFromInt(config.width),
                 },
             },
-            style_mask,
-            macos.app_kit.NSBackingStoreType.NSBackingStoreRetained,
+            .{ .titled_enabled = true, .closable_enabled = true, .miniaturizable_enabled = true, .resizable_enabled = true },
+            .retained,
             false,
         );
+        errdefer window_instance.deinit();
 
-        ns_window.setTitle(config.title);
-        ns_window.makeKeyAndOrderFront();
+        window_instance.makeKeyAndOrderFront();
 
         return MacosWindow{
             .allocator = allocator,
@@ -45,7 +39,7 @@ pub const MacosWindow = struct {
                 .height = config.height,
                 .width = config.width,
             },
-            .ns_window = ns_window,
+            .native_window = window_instance,
         };
     }
 
@@ -64,7 +58,7 @@ pub const MacosWindow = struct {
 
     fn deinit(ctx: *anyopaque) void {
         const self: *MacosWindow = @ptrCast(@alignCast(ctx));
-        self.allocator.destroy(self.ns_window);
+        self.native_window.deinit();
         self.allocator.destroy(self);
     }
 
@@ -75,6 +69,6 @@ pub const MacosWindow = struct {
 
     fn getNativeWindow(ctx: *anyopaque) *anyopaque {
         const self: *MacosWindow = @ptrCast(@alignCast(ctx));
-        return self.ns_window.value;
+        return self.native_window;
     }
 };

@@ -1,40 +1,31 @@
 const std = @import("std");
 
-const macos = @import("../../bindings.zig").macos;
+// const macos = @import("../../bindings.zig").macos;
+const apple = @import("../../bindings.zig").apple;
 const App = @import("../app.zig").App;
 
 /// A MacOS implementation of the Manatee `App` interface.
 pub const MacosApp = struct {
     allocator: std.mem.Allocator,
-    ns_application: *macos.app_kit.NSApplication,
-    ns_delegate: *macos.app_kit.NSApplicationDelegate,
+    delegate: *ManateeApplicationDelegate,
+    native_app: *apple.app_kit.Application,
 
     pub fn init(allocator: std.mem.Allocator) !MacosApp {
-        // Set up the AppKit NSApplication
-        var ns_application = try allocator.create(macos.app_kit.NSApplication);
-        ns_application.* = macos.app_kit.NSApplication.init();
-        ns_application.setActivationPolicy(macos.app_kit.NSApplicationActivationPolicy.NSApplicationActivationPolicyRegular);
+        // Set up the AppKit Application
+        const application_instance = try apple.app_kit.Application.init();
+        errdefer application_instance.deinit();
 
-        // Create an AppKit NSApplicationDelegate to allow us to customize the app's behavior
-        var application_delegate = try allocator.create(macos.app_kit.NSApplicationDelegate);
-        application_delegate.* = macos.app_kit.NSApplicationDelegate.init();
-        var application_delegate_class = application_delegate.getClass();
-
-        // Since this is a game, and not a standard app, let's ensure the app itself closes after
-        // the last remaining window closes
-        _ = application_delegate_class.addMethod("applicationShouldTerminateAfterLastWindowClosed:", struct {
-            fn imp() callconv(.C) bool {
-                return true;
-            }
-        }.imp);
+        // Create an Application Delegate to allow us to customize the app's behavior
+        const delegate_instance = try ManateeApplicationDelegate.init();
+        errdefer delegate_instance.deinit();
 
         // Now that we've set up our delegate, let's apply it to our app!
-        ns_application.setDelegate(application_delegate);
+        try application_instance.setDelegate(delegate_instance);
 
         return MacosApp{
             .allocator = allocator,
-            .ns_application = ns_application,
-            .ns_delegate = application_delegate,
+            .delegate = delegate_instance,
+            .native_app = application_instance,
         };
     }
 
@@ -52,16 +43,55 @@ pub const MacosApp = struct {
 
     fn deinit(ctx: *anyopaque) void {
         const self: *MacosApp = @ptrCast(@alignCast(ctx));
-        self.ns_delegate.deinit();
-        self.ns_application.deinit();
-        self.allocator.destroy(self.ns_delegate);
-        self.allocator.destroy(self.ns_application);
+        self.delegate.deinit();
+        self.native_app.deinit();
         self.allocator.destroy(self);
     }
 
-    fn run(ctx: *anyopaque) void {
+    fn run(ctx: *anyopaque) !void {
         const self: *MacosApp = @ptrCast(@alignCast(ctx));
-        self.ns_application.activate();
-        return self.ns_application.run();
+        std.debug.print("Running App", .{});
+        try self.native_app.setActivationPolicy(.regular);
+        self.native_app.activate();
+        return self.native_app.run();
+    }
+};
+
+/// A Custom Objective-C Application Delegate for Manatee
+const ManateeApplicationDelegate = opaque {
+    const Self = @This();
+    pub usingnamespace apple.objective_c.object.ObjectMixin(Self);
+
+    pub fn init() !*Self {
+        // Get the NSApplicationDelegate Protocol
+        const application_delegate_protocol = try apple.objective_c.Protocol.init("NSApplicationDelegate");
+
+        // Create a new Objective-C Class based off of NSObject. This class will act as our custom
+        // delegate, so we'll name it ManateeApplicationDelegate
+        const delegate_class = try apple.objective_c.Class.allocateClassPair(try apple.objective_c.Class.init("NSObject"), "ManateeApplicationDelegate", null);
+
+        // Add NSApplicationDelegate and register the class
+        try delegate_class.addProtocol(application_delegate_protocol);
+
+        // Add any custom methods to the class
+        try delegate_class.addMethod(
+            apple.objective_c.Sel.init("applicationShouldTerminateAfterLastWindowClosed:"),
+            applicationShouldTerminateAfterLastWindowClosed,
+            "b@:",
+        );
+        delegate_class.registerClassPair();
+
+        return try Self.new("ManateeApplicationDelegate");
+    }
+
+    pub fn deinit(self: *Self) void {
+        return self.dealloc();
+    }
+
+    fn applicationShouldTerminateAfterLastWindowClosed(_self: *Self, _cmd: *apple.objective_c.Sel) callconv(.c) bool {
+        // These params are required by the Objective-C runtime but we don't use them here
+        _ = _self;
+        _ = _cmd;
+        return true;
     }
 };

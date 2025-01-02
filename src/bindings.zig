@@ -1,9 +1,7 @@
-//! Idiomatic Zig bindings for various libraries used by Manatee
-//!
-//! Note: there's currently one (1) external Zig dep in this portion of the codebase, and that's
-//! zigwin32. See win32.zig for more information as to why that's included, as that breaks
-//! Manatee's paradigm of "zero dependencies wherever possible"
+//! Idiomatic Zig bindings for system libraries, frameworks, and APIs used by Manatee
+//! See: `bindings/README.md` for more information as to how these bindings are constructed
 
-pub const macos = @import("bindings/macos.zig");
-pub const vulkan = @import("bindings/vulkan.zig");
-pub const win32 = @import("bindings/win32.zig");
+pub const apple = @import("bindings/apple.zig");
+pub const macos = @import("bindings/macos.zig"); // DEPRECATED, remove once apple.zig is complete
+pub const vulkan = @import("bindings/vulkan.zig"); // Needs MASSIVE refactor to follow apple.zig
+pub const win32 = @import("bindings/win32.zig"); // Needs slight refactor (c.zig -> new pattern)

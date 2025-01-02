@@ -30,7 +30,7 @@ pub const Win32App = struct {
         self.allocator.destroy(self);
     }
 
-    fn run(ctx: *anyopaque) void {
+    fn run(ctx: *anyopaque) !void {
         const self: *Win32App = @ptrCast(@alignCast(ctx));
         _ = self; // I'll probably need this at some point lol
         var msg: win32.wnd_msg.Msg = undefined;

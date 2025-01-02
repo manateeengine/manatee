@@ -16,12 +16,12 @@ pub const App = struct {
 
     pub const VTable = struct {
         deinit: *const fn (ctx: *anyopaque) void,
-        run: *const fn (ctx: *anyopaque) void,
+        run: *const fn (ctx: *anyopaque) anyerror!void,
     };
 
     /// Starts the application's native event loop and runs until a termination signal is received.
-    pub fn run(self: App) void {
-        return self.vtable.run(self.ptr);
+    pub fn run(self: App) !void {
+        return try self.vtable.run(self.ptr);
     }
 
     /// Handles memory cleanup of anything created during the App's initialization process.

@@ -1,90 +1,18 @@
-//! Zig function wrappers for all functions prefixed by `objc_` in the Objective-C Runtime.
-//!
-//! Note: the following methods have not yet been implemented as they haven't been required for
-//! Manatee functionality:
-//!
-//! * `objc_allocateClassPair`
-//! * `objc_disposeClassPair`
-//! * `objc_registerClassPair`
-//! * `objc_duplicateClass`
-//! * `objc_getClassList`
-//! * `objc_copyClassList`
-//! * `objc_lookUpClass`
-//! * `objc_getRequiredClass`
-//! * `objc_getMetaClass`
-//! * `objc_setAssociatedObject`
-//! * `objc_getAssociatedObject`
-//! * `objc_removeAssociatedObjects`
-//! * `objc_copyImageNames`
-//! * `objc_copyClassNamesForImage`
-//! * `objc_getProtocol`
-//! * `objc_copyProtocolList`
-//! * `objc_allocateProtocol`
-//! * `objc_registerProtocol`
-//! * `objc_enumerateMutation`
-//! * `objc_setEnumerationMutationHandler`
-//! * `objc_loadWeak`
-//! * `objc_storeWeak`
-
 const std = @import("std");
 
-const c = @import("c.zig");
-const Class = @import("class.zig").Class;
-const Object = @import("object.zig").Object;
-const Protocol = @import("protocol.zig").Protocol;
 const Sel = @import("sel.zig").Sel;
-
-/// Creates a new protocol instance.
-/// See: https://developer.apple.com/documentation/objectivec/1418599-objc_allocateprotocol
-pub fn allocateProtocol(name: []const u8) Protocol {
-    return Protocol{
-        .value = c.objc_allocateProtocol(name.ptr),
-    };
-}
-
-/// Returns the class definition of a specified class.
-/// See: https://developer.apple.com/documentation/objectivec/1418952-objc_getclass
-pub fn getClass(name: []const u8) Class {
-    return Class{
-        .value = c.objc_getClass(name.ptr),
-    };
-}
-
-/// Returns a specified protocol.
-/// See: https://developer.apple.com/documentation/objectivec/1418870-objc_getprotocol
-pub fn getProtocol(name: []const u8) Protocol {
-    return Protocol{
-        .value = c.objc_getProtocol(name.ptr),
-    };
-}
 
 /// Sends a message with a simple return value to an instance of a class.
 /// See:
 ///
 /// This function contains a lot of additional supporting code in order to make it work properly
-/// with Zig's typing system. That code can be found in `./msg_send.zig`.
-pub fn msgSend(target: anytype, comptime ReturnType: type, raw_sel: anytype, args: anytype) ReturnType {
-    // The Objective-C runtime docs note that selectors must use the value returned from the
-    // sel_registerName function rather than a string. In order to build a better DX, we're going
-    // to allow strings to be passed into our objc_msgSend wrapper, and handle converting them into
-    // SEL names when calling the function. To do this, we'll call Sel.registerName for anything
-    // passed into here that's not already of type `Sel`
-    const sel: Sel = switch (@TypeOf(raw_sel)) {
-        Sel => raw_sel,
-        else => Sel.registerName(raw_sel),
-    };
-
-    // Since we're following Mitchell Hashimoto's pattern of storing Objective-C internal values in
-    // structs, we'll have a special case if one of our objects is passed into ReturnType. To
-    // compensate for this, we'll have to modify our return type if ReturnType is `Object`
-    const is_object = ReturnType == Object;
-    const ParsedReturnType = if (is_object) c.id else ReturnType;
-
+/// with Zig's typing system. For more information, see `BuildMsgSendFnType` below
+pub fn msgSend(target: anytype, comptime ReturnType: type, sel: *Sel, args: anytype) ReturnType {
     // We still have a couple more steps before we can call the actual objc_msgSend function. The
     // next thing on our list is to create a Zig-compatible typing for our function by calling our
     // helper function `BuildMsgSendFnType` (what a mouthful, but at least you know what the helper
     // does!)
-    const MsgSendFnType = BuildMsgSendFnType(ParsedReturnType, @TypeOf(target.value), @TypeOf(args));
+    const MsgSendFnType = BuildMsgSendFnType(ReturnType, @TypeOf(target), @TypeOf(args));
 
     // Other Zig Objective-C wrappers support both x86_64 (Intel-based machines) and aarch64 (Apple
     // Silicone-based machines). Given the fact that Apple won't be releasing anymore new machines
@@ -93,15 +21,12 @@ pub fn msgSend(target: anytype, comptime ReturnType: type, raw_sel: anytype, arg
     // reducing the complexity of calling objc_msgSend, as with x86_64 machines, objc_msgSend
     // actually has multiple different pointers based on the desired return type, which is
     // awful. Anyway, let's grab the pointer to that function.
-    const msg_send_ptr: *const MsgSendFnType = comptime @ptrCast(&c.objc_msgSend);
+    const msg_send_ptr: *const MsgSendFnType = comptime @ptrCast(&objc_msgSend);
 
     // We have the pointer to objc_msgSend, and we have our return type, now let's use Zig's
     // `@call` functionality to override the incompatible C AST typings and call that function!
-    const res = @call(.auto, msg_send_ptr, .{ target.value, sel.value } ++ args);
+    const res = @call(.auto, msg_send_ptr, .{ target, sel } ++ args);
 
-    if (is_object) {
-        return .{ .value = res };
-    }
     return res;
 }
 
@@ -114,12 +39,12 @@ pub fn msgSend(target: anytype, comptime ReturnType: type, raw_sel: anytype, arg
 /// Zig. This code was heavily inspired by both objz and zig-objectivec, and realistically is a
 /// healthy mix of both approaches, as well as various StackOverflow posts regarding writing MacOS
 /// desktop apps in native C.
-pub fn BuildMsgSendFnType(comptime ReturnType: type, comptime TargetType: type, comptime ArgsType: type) type {
+fn BuildMsgSendFnType(comptime ReturnType: type, comptime TargetType: type, comptime ArgsType: type) type {
     // Target for objc_msgSend must be of Objective-C type "id", which can be a plethora of
     // different Objective-C types under the hood, such as `Class`, `Object`, etc.
     // Because of this case, let's start off by asserting that TargetType is the same size as
     // Objective-C's id type
-    std.debug.assert(@sizeOf(TargetType) == @sizeOf(c.id));
+    // std.debug.assert(@sizeOf(TargetType) == @sizeOf(c.id));
 
     // Args for objc_msgSend can only be a tuple, so let's assert that since args is AnyType
     const args_type_info = @typeInfo(ArgsType).@"struct";
@@ -135,7 +60,7 @@ pub fn BuildMsgSendFnType(comptime ReturnType: type, comptime TargetType: type, 
         params_arr[0] = .{ .is_generic = false, .is_noalias = false, .type = TargetType };
 
         // The second param of objc_msgSend will always be a raw Objective-C selector
-        params_arr[1] = .{ .is_generic = false, .is_noalias = false, .type = c.SEL };
+        params_arr[1] = .{ .is_generic = false, .is_noalias = false, .type = *Sel };
 
         // All remaining params will be based off of the args provided, in the exact order of the
         // tuple
@@ -161,3 +86,7 @@ pub fn BuildMsgSendFnType(comptime ReturnType: type, comptime TargetType: type, 
         },
     });
 }
+
+// Note: Typings for this external function are intentionally sparse. See the above comments in
+// msgSend for more information
+extern "c" fn objc_msgSend() callconv(.c) void;
