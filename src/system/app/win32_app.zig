@@ -6,10 +6,14 @@ const App = @import("../app.zig").App;
 /// A Win32App implementation of the Manatee `App` interface.
 pub const Win32App = struct {
     allocator: std.mem.Allocator,
+    native_app: win32.c.Hwnd,
 
     pub fn init(allocator: std.mem.Allocator) !Win32App {
+        const hinstance = try win32.wnd_msg.Hinstance.init(null);
+
         return Win32App{
             .allocator = allocator,
+            .native_app = hinstance,
         };
     }
 
@@ -22,12 +26,18 @@ pub const Win32App = struct {
 
     const vtable = App.VTable{
         .deinit = &deinit,
+        .getNativeApp = &getNativeApp,
         .run = &run,
     };
 
     fn deinit(ctx: *anyopaque) void {
         const self: *Win32App = @ptrCast(@alignCast(ctx));
         self.allocator.destroy(self);
+    }
+
+    fn getNativeApp(ctx: *anyopaque) *anyopaque {
+        const self: *Win32App = @ptrCast(@alignCast(ctx));
+        return self.native_app;
     }
 
     fn run(ctx: *anyopaque) !void {

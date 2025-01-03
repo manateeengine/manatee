@@ -38,6 +38,7 @@ pub const MacosApp = struct {
 
     const vtable = App.VTable{
         .deinit = &deinit,
+        .getNativeApp = &getNativeApp,
         .run = &run,
     };
 
@@ -48,9 +49,13 @@ pub const MacosApp = struct {
         self.allocator.destroy(self);
     }
 
+    fn getNativeApp(ctx: *anyopaque) *anyopaque {
+        const self: *MacosApp = @ptrCast(@alignCast(ctx));
+        return self.native_app;
+    }
+
     fn run(ctx: *anyopaque) !void {
         const self: *MacosApp = @ptrCast(@alignCast(ctx));
-        std.debug.print("Running App", .{});
         try self.native_app.setActivationPolicy(.regular);
         self.native_app.activate();
         return self.native_app.run();

@@ -16,8 +16,14 @@ pub const App = struct {
 
     pub const VTable = struct {
         deinit: *const fn (ctx: *anyopaque) void,
+        getNativeApp: *const fn (ctx: *anyopaque) *anyopaque,
         run: *const fn (ctx: *anyopaque) anyerror!void,
     };
+
+    /// Returns an opaque pointer to the Window's associated OS-level app object.
+    pub fn getNativeApp(self: App) *anyopaque {
+        return self.vtable.getNativeApp(self.ptr);
+    }
 
     /// Starts the application's native event loop and runs until a termination signal is received.
     pub fn run(self: App) !void {
