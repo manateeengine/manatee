@@ -3,4 +3,4 @@
 
 pub const apple = @import("bindings/apple.zig");
 pub const vulkan = @import("bindings/vulkan.zig"); // Needs MASSIVE refactor to follow apple.zig
-pub const win32 = @import("bindings/win32.zig"); // Needs slight refactor (c.zig -> new pattern)
+pub const win32 = @import("bindings/win32.zig");

@@ -24,6 +24,7 @@ pub const VulkanGpu = struct {
     allocator: std.mem.Allocator,
     device: *vulkan.core.Device,
     instance: *vulkan.core.Instance,
+    surface: vulkan.core.SurfaceKHR,
 
     pub fn init(allocator: std.mem.Allocator, window: *Window) !VulkanGpu {
         // Setup App
@@ -133,51 +134,12 @@ pub const VulkanGpu = struct {
 
         // Let's start be allocating memory for our surface
         const surface = try vulkan.core.SurfaceKHR.init(allocator, instance, window.getNativeWindow());
-        _ = surface;
-
-        // // Now let's create the appropriate surface for the target OS, throwing a compile error if
-        // // we're not using a supported OS
-        // switch (builtin.target.os.tag) {
-        //     .macos => {
-        //         const macos = @import("../../bindings/macos.zig");
-
-        //         std.debug.print("Creating Metal Layer", .{});
-        //         // Create a CAMetalLayer
-        //         var ca_metal_layer = try allocator.create(macos.core_animation.CAMetalLayer);
-        //         ca_metal_layer.* = macos.core_animation.CAMetalLayer.init();
-
-        //         std.debug.print("Creating View", .{});
-        //         // Create an NSView and set its layer to the newly created CAMetalLayer
-        //         var ns_view = macos.app_kit.NSView.init();
-        //         ns_view.setWantsLayer(true);
-        //         ns_view.setLayer(ca_metal_layer.*);
-
-        //         std.debug.print("Creating Window", .{});
-        //         // Create a reference to the native window and set the window's contentView to the
-        //         // newly created NSView
-        //         var ns_window = macos.app_kit.NSWindow{ .value = @ptrCast(@alignCast(window.getNativeWindow())) };
-        //         ns_window.setContentView(ns_view);
-
-        //         std.debug.print("Creating Vulkan Metal Surface", .{});
-        //         // Finally create the Vulkan surface and assign the CAMetalLayer to it
-        //         const metal_surface_create_info = vulkan.metal.MetalSurfaceCreateInfo{
-        //             .p_layer = @ptrCast(&ca_metal_layer.value),
-        //         };
-
-        //         if (vulkan.metal.createMetalSurface(instance.*, &metal_surface_create_info, null, surface) != .success) {
-        //             return error.metal_surface_creation_failed;
-        //         }
-        //     },
-        //     .windows => {
-        //         // TODO: Push, switch machines, and test this on windows
-        //     },
-        //     else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
-        // }
 
         return VulkanGpu{
             .allocator = allocator,
             .device = device,
             .instance = instance,
+            .surface = surface,
         };
     }
 

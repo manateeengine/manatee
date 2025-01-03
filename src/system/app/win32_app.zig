@@ -6,14 +6,14 @@ const App = @import("../app.zig").App;
 /// A Win32App implementation of the Manatee `App` interface.
 pub const Win32App = struct {
     allocator: std.mem.Allocator,
-    native_app: win32.c.Hwnd,
+    native_app: *win32.wnd_msg.Instance,
 
     pub fn init(allocator: std.mem.Allocator) !Win32App {
-        const hinstance = try win32.wnd_msg.Hinstance.init(null);
+        const instance = try win32.wnd_msg.Instance.init(null);
 
         return Win32App{
             .allocator = allocator,
-            .native_app = hinstance,
+            .native_app = instance,
         };
     }
 
@@ -43,10 +43,10 @@ pub const Win32App = struct {
     fn run(ctx: *anyopaque) !void {
         const self: *Win32App = @ptrCast(@alignCast(ctx));
         _ = self; // I'll probably need this at some point lol
-        var msg: win32.wnd_msg.Msg = undefined;
-        while (win32.wnd_msg.getMessageW(&msg, null, 0, 0)) {
-            _ = win32.wnd_msg.translateMessage(&msg);
-            _ = win32.wnd_msg.dispatchMessageW(&msg);
+        var msg: win32.wnd_msg.Message = undefined;
+        while (msg.getMessageW(null, 0, 0)) {
+            _ = msg.translateMessage();
+            _ = msg.dispatchMessageW();
         }
     }
 };

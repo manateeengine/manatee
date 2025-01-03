@@ -283,8 +283,8 @@ pub const VkWin32SurfaceCreateInfoKHR = extern struct {
     const win32 = @import("../win32.zig");
     sType: i32,
     flags: u32,
-    hinstance: win32.foundation.HInstance,
-    hwnd: win32.foundation.HWnd,
+    hinstance: *win32.wnd_msg.Instance,
+    hwnd: *win32.wnd_msg.Window,
 };
 
 // Functions

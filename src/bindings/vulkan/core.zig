@@ -1544,8 +1544,8 @@ pub const Win32SurfaceCreateInfoKHR = extern struct {
     const win32 = @import("../win32.zig");
     sType: StructureType = StructureType.win32_surface_create_info_khr,
     flags: u32 = 0,
-    hinstance: win32.foundation.HInstance,
-    hwnd: win32.foundation.HWnd,
+    hinstance: *win32.wnd_msg.Instance,
+    hwnd: *win32.wnd_msg.Window,
 };
 
 /// A Vulkan SurfaceKHR handle with cross-platform initialization
@@ -1591,13 +1591,9 @@ pub const SurfaceKHR = struct {
                 const surface_khr_handle = try allocator.create(c.VkSurfaceKHR);
                 errdefer allocator.destroy(surface_khr_handle);
 
-                const hwnd: win32.foundation.HWnd = @ptrCast(@alignCast(native_window));
-                const h_instance_ptr_size: usize = @intCast(win32.ui.windows_and_messaging.getWindowLongW(hwnd, win32.ui.windows_and_messaging.WindowLongPtrIndex.P_HINSTANCE));
-                const h_instance: win32.foundation.HInstance = @ptrFromInt(h_instance_ptr_size);
-
                 const win32_surface_create_info = Win32SurfaceCreateInfoKHR{
-                    .hwnd = hwnd,
-                    .hinstance = h_instance,
+                    .hwnd = @ptrCast(native_window),
+                    .hinstance = @ptrCast(try win32.wnd_msg.Instance.init(null)),
                 };
 
                 if (createWin32SurfaceKHR(instance.*, &win32_surface_create_info, null, surface_khr_handle) != .success) {
