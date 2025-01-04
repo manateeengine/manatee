@@ -60,7 +60,7 @@ pub const Game = struct {
 
         {
             errdefer allocator.destroy(base_gpu);
-            base_gpu.* = try BaseGpu.init(allocator, &main_window);
+            base_gpu.* = try BaseGpu.init(allocator, &app, &main_window);
         }
 
         const gpu = base_gpu.gpu();
