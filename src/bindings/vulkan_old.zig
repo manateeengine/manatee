@@ -1,3 +1,3 @@
-pub const c = @import("vulkan/c.zig");
-pub const core = @import("vulkan/core.zig");
-pub const metal = @import("vulkan/metal.zig");
+pub const c = @import("vulkan_old/c.zig");
+pub const core = @import("vulkan_old/old_core.zig");
+pub const metal = @import("vulkan_old/metal.zig");

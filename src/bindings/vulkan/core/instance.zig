@@ -11,7 +11,7 @@ const StructureType = @import("structure_type.zig").StructureType;
 pub const Instance = enum(usize) {
     const Self = @This();
 
-    pub fn init(create_info: *const InstanceCreateInfo, allocation_callbacks: ?*AllocationCallbacks) !*Self {
+    pub fn init(create_info: *const InstanceCreateInfo, allocation_callbacks: ?*AllocationCallbacks) !Self {
         return try createInstance(create_info, allocation_callbacks);
     }
 
@@ -22,35 +22,33 @@ pub const Instance = enum(usize) {
     /// Create a new Vulkan instance
     /// Original: `VkCreateInstance`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateInstance.html
-    pub fn createInstance(create_info: *const InstanceCreateInfo, allocation_callbacks: ?*AllocationCallbacks) !*Self {
+    pub fn createInstance(create_info: *const InstanceCreateInfo, allocation_callbacks: ?*AllocationCallbacks) !Self {
         var instance: Self = undefined;
         const result = vkCreateInstance(create_info, allocation_callbacks, &instance);
 
         if (result != Result.success) {
             return error.instance_creation_failed;
         }
-        return &instance;
+        return instance;
     }
 
     /// Enumerates the physical devices accessible to a Vulkan instance
     /// Original: `vkEnumeratePhysicalDevices`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkEnumeratePhysicalDevices.html
     pub fn enumeratePhysicalDevices(self: *Self, allocator: std.mem.Allocator) ![]PhysicalDevice {
-        std.debug.print("Enumerating Physical Devices\n", .{});
         var physical_Device_count: u32 = 0;
         _ = vkEnumeratePhysicalDevices(self.*, &physical_Device_count, null);
-        std.debug.print("First Stage Complete {}\n", .{physical_Device_count});
+
         if (physical_Device_count == 0) {
             return error.no_physical_devices;
         }
 
-        std.debug.print("Filling Physical Device Array with {} Devices\n", .{physical_Device_count});
-
         const physical_devices = try allocator.alloc(PhysicalDevice, physical_Device_count);
         errdefer allocator.free(physical_devices);
-        // std.debug.print("Found {} Physical Devices\n", .{physical_Device_count});
-        _ = vkEnumeratePhysicalDevices(self.*, &physical_Device_count, physical_devices.ptr);
-        std.debug.print("Returning Physical Devices\n", .{});
+
+        if (vkEnumeratePhysicalDevices(self.*, &physical_Device_count, physical_devices.ptr) != .success) {
+            return error.device_enumeration_failed;
+        }
 
         return physical_devices;
     }
@@ -59,7 +57,7 @@ pub const Instance = enum(usize) {
     /// Original: `vkDestroyInstance`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyInstance.html
     pub fn destroyInstance(self: *Self, allocation_callbacks: ?*AllocationCallbacks) void {
-        vkDestroyInstance(self, allocation_callbacks);
+        vkDestroyInstance(self.*, allocation_callbacks);
     }
 };
 
@@ -168,5 +166,5 @@ pub fn makeApiVersion(variant: u3, major: u7, minor: u10, patch: u12) u32 {
 }
 
 extern fn vkCreateInstance(pCreateInfo: *const InstanceCreateInfo, pAllocator: ?*const AllocationCallbacks, instance: *Instance) callconv(.c) Result;
-extern fn vkDestroyInstance(instance: *Instance, pAllocator: ?*const AllocationCallbacks) void;
+extern fn vkDestroyInstance(instance: Instance, pAllocator: ?*const AllocationCallbacks) void;
 extern fn vkEnumeratePhysicalDevices(instance: Instance, pPhysicalDeviceCount: *u32, pPhysicalDevices: ?[*]PhysicalDevice) Result;

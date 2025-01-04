@@ -1,7 +1,7 @@
 const builtin = @import("builtin");
 const std = @import("std");
 
-const vulkan = @import("../../bindings.zig").vulkan;
+const vulkan = @import("../../bindings/vulkan_old.zig");
 const Gpu = @import("../gpu.zig").Gpu;
 const Window = @import("../window.zig").Window;
 

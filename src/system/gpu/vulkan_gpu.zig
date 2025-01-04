@@ -24,7 +24,7 @@ const Window = @import("../window.zig").Window;
 pub const VulkanGpu = struct {
     allocator: std.mem.Allocator,
     // device: *vulkan.core.Device,
-    instance: *vulkan.core.Instance,
+    instance: vulkan.core.Instance,
     // surface: vulkan.core.SurfaceKHR,
 
     pub fn init(allocator: std.mem.Allocator, app: *const App, window: *Window) !VulkanGpu {
@@ -59,11 +59,11 @@ pub const VulkanGpu = struct {
             // TODO: Figure out if this only ever needs to be loaded on MacOS?
             .flags = vulkan.core.InstanceCreateFlags{ .enumerate_portability_bit_khr = true },
         };
-        const instance = try vulkan.core.Instance.init(&instance_create_info, null);
+        var instance = try vulkan.core.Instance.init(&instance_create_info, null);
 
         // Determine the Best Physical Device
         const physical_devices = try instance.enumeratePhysicalDevices(allocator);
-        errdefer allocator.free(physical_devices);
+        defer allocator.free(physical_devices);
 
         std.debug.print("Vulkan Initialized Successfully!\n", .{});
         return VulkanGpu{
@@ -89,3 +89,8 @@ pub const VulkanGpu = struct {
         self.allocator.destroy(self);
     }
 };
+
+/// A Manatee-Specific struct that contains a Vulkan Physical Device handle, all of its
+const ManateePhysicalDevice = struct {
+
+}
