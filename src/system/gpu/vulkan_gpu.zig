@@ -26,6 +26,7 @@ pub const VulkanGpu = struct {
     device: vulkan.Device,
     instance: vulkan.Instance,
     queue_graphics: vulkan.Queue,
+    queue_present: vulkan.Queue,
     surface: vulkan.SurfaceKhr,
 
     pub fn init(allocator: std.mem.Allocator, app: *const App, window: *Window) !VulkanGpu {
@@ -59,6 +60,9 @@ pub const VulkanGpu = struct {
         };
         var instance = try vulkan.Instance.init(&instance_create_info);
 
+        // Create Surface
+        const surface = try vulkan.SurfaceKhr.init(instance, app.getNativeApp(), window.getNativeWindow());
+
         // Determine the Best Physical Device
         const physical_devices = try instance.enumeratePhysicalDevices(allocator);
         defer allocator.free(physical_devices);
@@ -68,7 +72,7 @@ pub const VulkanGpu = struct {
 
         for (physical_devices) |physical_device| {
             // TODO: There HAS to be a better way to do this than to const cast???
-            const manatee_physical_device = try ManateePhysicalDevice.init(allocator, @constCast(&physical_device));
+            const manatee_physical_device = try ManateePhysicalDevice.init(allocator, @constCast(&physical_device), surface);
 
             if (manatee_physical_device.score > best_physical_device_score) {
                 best_physical_device = manatee_physical_device;
@@ -78,11 +82,18 @@ pub const VulkanGpu = struct {
 
         // Create Logical Device
         const queue_priorities: [1]f32 = .{1.0};
-        const queue_create_infos: [1]vulkan.DeviceQueueCreateInfo = .{vulkan.DeviceQueueCreateInfo{
-            .queue_count = 1,
-            .queue_family_index = best_physical_device.?.queue_family_index_graphics,
-            .p_queue_priorities = &queue_priorities,
-        }};
+        const queue_create_infos: [2]vulkan.DeviceQueueCreateInfo = .{
+            vulkan.DeviceQueueCreateInfo{
+                .queue_count = 1,
+                .queue_family_index = best_physical_device.?.queue_family_index_graphics,
+                .p_queue_priorities = &queue_priorities,
+            },
+            vulkan.DeviceQueueCreateInfo{
+                .queue_count = 1,
+                .queue_family_index = best_physical_device.?.queue_family_index_present,
+                .p_queue_priorities = &queue_priorities,
+            },
+        };
 
         const device_create_info = vulkan.DeviceCreateInfo{
             .queue_create_info_count = queue_create_infos.len,
@@ -91,11 +102,9 @@ pub const VulkanGpu = struct {
         };
         var device = try vulkan.Device.init(best_physical_device.?.device, &device_create_info);
 
-        // Create Graphics Queue
+        // Get queues from device
         const queue_graphics = device.getQueue(best_physical_device.?.queue_family_index_graphics, 0);
-
-        // Create Surface
-        const surface = try vulkan.SurfaceKhr.init(instance, app.getNativeApp(), window.getNativeWindow());
+        const queue_present = device.getQueue(best_physical_device.?.queue_family_index_present, 0);
 
         std.debug.print("Vulkan Initialized Successfully!\n", .{});
         return VulkanGpu{
@@ -103,6 +112,7 @@ pub const VulkanGpu = struct {
             .device = device,
             .instance = instance,
             .queue_graphics = queue_graphics,
+            .queue_present = queue_present,
             .surface = surface,
         };
     }
@@ -134,23 +144,37 @@ const ManateePhysicalDevice = struct {
     features: vulkan.PhysicalDeviceFeatures,
     properties: vulkan.PhysicalDeviceProperties,
     queue_family_index_graphics: u32,
+    queue_family_index_present: u32,
     score: u32,
 
-    pub fn init(allocator: std.mem.Allocator, physical_device: *vulkan.PhysicalDevice) !Self {
+    pub fn init(allocator: std.mem.Allocator, physical_device: *vulkan.PhysicalDevice, surface: vulkan.SurfaceKhr) !Self {
+        const invalid_queue_family_index = std.math.maxInt(u32);
+
         const features = physical_device.getFeatures();
         const properties = physical_device.getProperties();
 
         const queue_family_properties = try physical_device.getQueueFamilyProperties(allocator);
         defer allocator.free(queue_family_properties);
 
-        var queue_family_index_graphics: u32 = std.math.maxInt(u32);
+        var queue_family_index_graphics: u32 = invalid_queue_family_index;
+        var queue_family_index_present: u32 = invalid_queue_family_index;
 
         for (queue_family_properties, 0..) |queue_family, idx| {
-            if (queue_family_index_graphics == std.math.maxInt(u32) and @as(u32, @bitCast(queue_family.queue_flags)) & @as(u32, @bitCast(vulkan.QueueFlagBits.graphics_bit)) != 0) {
-                queue_family_index_graphics = @intCast(idx);
+            // Set graphics queue family index
+            if (queue_family_index_graphics == invalid_queue_family_index) {
+                const has_graphics_support = @as(u32, @bitCast(queue_family.queue_flags)) & @as(u32, @bitCast(vulkan.QueueFlagBits.graphics_bit)) != 0;
+                if (has_graphics_support) {
+                    queue_family_index_graphics = @intCast(idx);
+                }
             }
 
-            // TODO: More will come here as I progress with the tutorial
+            // Set present queue family index
+            if (queue_family_index_present == invalid_queue_family_index) {
+                const has_present_support = try physical_device.getSurfaceSupportKHR(@intCast(idx), surface);
+                if (has_present_support) {
+                    queue_family_index_present = @intCast(idx);
+                }
+            }
         }
 
         var score: u32 = 0;
@@ -175,6 +199,7 @@ const ManateePhysicalDevice = struct {
             .features = features,
             .properties = properties,
             .queue_family_index_graphics = queue_family_index_graphics,
+            .queue_family_index_present = queue_family_index_present,
             .score = score,
         };
     }

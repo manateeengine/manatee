@@ -2,6 +2,7 @@ const std = @import("std");
 
 const Instance = @import("instance.zig").Instance;
 const Result = @import("result.zig").Result;
+const SurfaceKhr = @import("surface_khr.zig").SurfaceKhr;
 
 /// Opaque handle to a physical device object
 /// Original: `VhPhysicalDevice`
@@ -39,6 +40,17 @@ pub const PhysicalDevice = enum(usize) {
         vkGetPhysicalDeviceQueueFamilyProperties(self.*, &physical_device_queue_family_property_count, physical_device_queue_family_properties.ptr);
 
         return physical_device_queue_family_properties;
+    }
+
+    /// Query if presentation is supported
+    /// Original: `vkGetPhysicalDeviceSurfaceSupportKHR`
+    /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceSupportKHR.html
+    pub fn getSurfaceSupportKHR(self: *Self, queue_family_index: u32, surface: SurfaceKhr) !bool {
+        var is_supported: bool = undefined;
+        if (vkGetPhysicalDeviceSurfaceSupportKHR(self.*, queue_family_index, surface, &is_supported) != .success) {
+            return error.unable_to_determine_surface_support;
+        }
+        return is_supported;
     }
 };
 
@@ -501,5 +513,6 @@ pub const SampleCountFlags = packed struct(u32) {
 };
 
 extern fn vkGetPhysicalDeviceFeatures(physicalDevice: PhysicalDevice, pFeatures: *PhysicalDeviceFeatures) void;
+extern fn vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice: PhysicalDevice, queueFamilyIndex: u32, surface: SurfaceKhr, pSupported: *bool) Result;
 extern fn vkGetPhysicalDeviceProperties(physicalDevice: PhysicalDevice, pProperties: *PhysicalDeviceProperties) void;
 extern fn vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *u32, pQueueFamilyProperties: ?[*]QueueFamilyProperties) void;
