@@ -120,6 +120,7 @@ pub const VulkanGpu = struct {
 
     fn deinit(ctx: *anyopaque) void {
         const self: *VulkanGpu = @ptrCast(@alignCast(ctx));
+        self.surface.deinit(self.instance);
         self.device.deinit();
         self.instance.deinit();
         self.allocator.destroy(self);

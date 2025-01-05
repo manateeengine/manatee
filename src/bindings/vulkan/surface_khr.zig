@@ -40,6 +40,11 @@ pub const SurfaceKhr = enum(u32) {
         }
     }
 
+    /// TODO: Figure out how I want to document manatee-specific deinit functions
+    pub fn deinit(self: *Self, instance: Instance) void {
+        return self.destroySurface(instance, null);
+    }
+
     /// Create a VkSurfaceKHR object for CAMetalLayer
     /// Original: `vkCreateMetalSurfaceEXT`
     /// https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateMetalSurfaceEXT.html
@@ -60,6 +65,13 @@ pub const SurfaceKhr = enum(u32) {
             return error.metal_surface_creation_failed;
         }
         return surface;
+    }
+
+    /// Destroy a VkSurfaceKHR object
+    /// Original: `vkDestroySurfaceKHR`
+    /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroySurfaceKHR.html
+    pub fn destroySurface(self: *Self, instance: Instance, allocation_callbacks: ?*const AllocationCallbacks) void {
+        return vkDestroySurfaceKHR(instance, self.*, allocation_callbacks);
     }
 };
 
@@ -86,3 +98,4 @@ pub const Win32SurfaceCreateInfoKhr = extern struct {
 
 extern fn vkCreateMetalSurfaceEXT(instance: Instance, pCreateInfo: *const MetalSurfaceCreateInfoExt, pAllocator: ?*const AllocationCallbacks, pSurface: *SurfaceKhr) Result;
 extern fn vkCreateWin32SurfaceKHR(instance: Instance, pCreateInfo: *const Win32SurfaceCreateInfoKhr, pAllocator: ?*const AllocationCallbacks, surface: *SurfaceKhr) Result;
+extern fn vkDestroySurfaceKHR(instance: Instance, surface: SurfaceKhr, pAllocator: ?*const AllocationCallbacks) void;
