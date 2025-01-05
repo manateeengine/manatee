@@ -23,8 +23,11 @@ pub const makeApiVersion = instance.makeApiVersion;
 pub const PhysicalDevice = physical_device.PhysicalDevice;
 pub const PhysicalDeviceFeatures = physical_device.PhysicalDeviceFeatures;
 pub const PhysicalDeviceProperties = physical_device.PhysicalDeviceProperties;
+pub const PresentModeKhr = physical_device.PresentModeKhr;
 pub const QueueFamilyProperties = physical_device.QueueFamilyProperties;
 pub const QueueFlagBits = physical_device.QueueFlagBits;
+pub const SurfaceCapabilitiesKhr = physical_device.SurfaceCapabilitiesKhr;
+pub const SurfaceFormatKhr = physical_device.SurfaceFormatKhr;
 
 pub const Result = result.Result;
 

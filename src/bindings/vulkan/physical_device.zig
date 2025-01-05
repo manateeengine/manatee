@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const Format = @import("format.zig").Format;
 const Instance = @import("instance.zig").Instance;
 const Result = @import("result.zig").Result;
 const SurfaceKhr = @import("surface_khr.zig").SurfaceKhr;
@@ -42,10 +43,21 @@ pub const PhysicalDevice = enum(usize) {
         return physical_device_queue_family_properties;
     }
 
+    /// Query surface capabilities
+    /// Original: `vkGetSurfaceCapabilitiesKHR`
+    /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceCapabilitiesKHR.html
+    pub fn getSurfaceCapabilitiesKhr(self: *Self, surface: SurfaceKhr) !SurfaceCapabilitiesKhr {
+        var surface_capabilities_khr: SurfaceCapabilitiesKhr = undefined;
+        if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(self.*, surface, &surface_capabilities_khr) != .suboptimal_khr) {
+            return error.unable_to_determine_surface_capabilities;
+        }
+        return surface_capabilities_khr;
+    }
+
     /// Query if presentation is supported
     /// Original: `vkGetPhysicalDeviceSurfaceSupportKHR`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceSupportKHR.html
-    pub fn getSurfaceSupportKHR(self: *Self, queue_family_index: u32, surface: SurfaceKhr) !bool {
+    pub fn getSurfaceSupportKhr(self: *Self, queue_family_index: u32, surface: SurfaceKhr) !bool {
         var is_supported: bool = undefined;
         if (vkGetPhysicalDeviceSurfaceSupportKHR(self.*, queue_family_index, surface, &is_supported) != .success) {
             return error.unable_to_determine_surface_support;
@@ -67,6 +79,29 @@ pub const max_physical_device_name_size: usize = 256;
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VK_UUID_SIZE.html
 pub const uuid_size: usize = 16;
 
+/// Supported color space of the presentation engine
+/// Original: `VkColorSlaceKhr`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkColorSpaceKHR.html
+/// TODO: Add enum doc comments
+pub const ColorSpaceKhr = enum(u32) {
+    srgb_nonlinear_khr = 0,
+    display_p3_nonlinear_ext = 1000104001,
+    extended_srgb_linear_ext = 1000104002,
+    display_p3_linear_ext = 1000104003,
+    dci_p3_nonlinear_ext = 1000104004,
+    bt709_linear_ext = 1000104005,
+    bt709_nonlinear_ext = 1000104006,
+    bt2020_linear_ext = 1000104007,
+    hdr10_st2084_ext = 1000104008,
+    dolbyvision_ext = 1000104009,
+    hdr10_hlg_ext = 1000104010,
+    adobergb_linear_ext = 1000104011,
+    adobergb_nonlinear_ext = 1000104012,
+    pass_through_ext = 1000104013,
+    extended_srgb_nonlinear_ext = 1000104014,
+    display_native_amd = 1000213000,
+};
+
 /// Supported physical device types
 /// Original: VkPhysicalDeviceType
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPhysicalDeviceType.html
@@ -83,6 +118,79 @@ pub const PhysicalDeviceType = enum(u32) {
     cpu = 4,
 };
 
+/// Presentation mode supported for a surface
+/// Original: `vkPresentModeKhr`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPresentModeKHR.html
+pub const PresentModeKhr = enum(u32) {
+    immediate_khr = 0,
+    mailbox_khr = 1,
+    fifo_khr = 2,
+    fifo_relaxed_khr = 3,
+    shared_demand_refresh_khr = 100111000,
+    shared_continuous_refresh_khr = 1000111001,
+    fifo_latest_ready_ext = 1000361000,
+};
+
+/// Bitmask of VkCompositeAlphaFlagBitsKHR
+/// Original: `VkCompositeAlphaFlagsKHR`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkCompositeAlphaFlagsKHR.html
+pub const CompositeAlphaFlagsKhr = packed struct(u32) {
+    const Self = @This();
+
+    opaque_bit_khr_enabled: bool = false,
+    pre_multiplied_bit_khr_enabled: bool = false,
+    post_multiplied_bit_khr_enabled: bool = false,
+    inherit_bit_khr_enabled: bool = false,
+    _reserved_bit_4: u1 = 0,
+    _reserved_bit_5: u1 = 0,
+    _reserved_bit_6: u1 = 0,
+    _reserved_bit_7: u1 = 0,
+    _reserved_bit_8: u1 = 0,
+    _reserved_bit_9: u1 = 0,
+    _reserved_bit_10: u1 = 0,
+    _reserved_bit_11: u1 = 0,
+    _reserved_bit_12: u1 = 0,
+    _reserved_bit_13: u1 = 0,
+    _reserved_bit_14: u1 = 0,
+    _reserved_bit_15: u1 = 0,
+    _reserved_bit_16: u1 = 0,
+    _reserved_bit_17: u1 = 0,
+    _reserved_bit_18: u1 = 0,
+    _reserved_bit_19: u1 = 0,
+    _reserved_bit_20: u1 = 0,
+    _reserved_bit_21: u1 = 0,
+    _reserved_bit_22: u1 = 0,
+    _reserved_bit_23: u1 = 0,
+    _reserved_bit_24: u1 = 0,
+    _reserved_bit_25: u1 = 0,
+    _reserved_bit_26: u1 = 0,
+    _reserved_bit_27: u1 = 0,
+    _reserved_bit_28: u1 = 0,
+    _reserved_bit_29: u1 = 0,
+    _reserved_bit_30: u1 = 0,
+    _reserved_bit_31: u1 = 0,
+
+    /// The alpha component, if it exists, of the images is ignored in the compositing process.
+    pub const opaque_bit_khr = Self{ .opaque_bit_khr_enabled = true };
+    /// The alpha component, if it exists, of the images is respected in the compositing process.
+    pub const pre_multiplied_bit_khr = Self{ .pre_multiplied_bit_khr_enabled = true };
+    /// The alpha component, if it exists, of the images is respected in the compositing process.
+    pub const post_multiplied_bit_khr = Self{ .post_multiplied_bit_khr_enabled = true };
+    /// The way in which the presentation engine treats the alpha component in the images is
+    /// unknown to the Vulkan API.
+    pub const inherit_bit_khr = Self{ .inherit_bit_khr_enabled = true };
+};
+
+/// Structure specifying a two-dimensional extent
+/// Original: `VkExtent2D`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkExtent2D.html
+pub const Extent2d = extern struct {
+    /// The width of the extent.
+    width: u32,
+    /// The height of the extent.
+    height: u32,
+};
+
 /// Structure specifying a three-dimensional extent
 /// Original: `VkExtent3D`
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkExtent3D.html
@@ -93,6 +201,101 @@ pub const Extent3d = extern struct {
     height: u32,
     /// The depth of the extent.
     depth: u32,
+};
+
+/// Bitmask of VkImageUsageFlagBits
+/// Original: `VkImageUsageFlags`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkImageUsageFlags.html
+pub const ImageUsageFlags = packed struct(u32) {
+    const Self = @This();
+
+    transfer_src_bit_enabled: bool = false,
+    transfer_dst_bit_enabled: bool = false,
+    sampled_bit_enabled: bool = false,
+    storage_bit_enabled: bool = false,
+    color_attachment_bit_enabled: bool = false,
+    depth_stencil_attachment_bit_enabled: bool = false,
+    transient_attachment_bit_enabled: bool = false,
+    input_attachment_bit_enabled: bool = false,
+    fragment_shading_rate_attachment_bit_khr_enabled: bool = false,
+    fragment_density_map_bit_ext: bool = false,
+    video_decode_dst_bit_khr_enabled: bool = false,
+    video_decode_src_bit_khr_enabled: bool = false,
+    video_decode_dpb_bit_khr_enabled: bool = false,
+    video_encode_dst_bit_khr_enabled: bool = false,
+    video_encode_src_bit_khr_enabled: bool = false,
+    video_encode_dpb_bit_khr_enabled: bool = false,
+    _reserved_bit_16: u1 = 0,
+    _reserved_bit_17: u1 = 0,
+    invocation_mask_bit_huawei_enabled: bool = false,
+    attachment_feedback_loop_bit_ext_enabled: bool = false,
+    sample_weight_bit_qcom_enabled: bool = false,
+    sample_block_match_bit_qcom_enabled: bool = false,
+    host_transfer_bit_ext_enabled: bool = false,
+    _reserved_bit_23: u1 = 0,
+    _reserved_bit_24: u1 = 0,
+    _reserved_bit_25: u1 = 0,
+    _reserved_bit_26: u1 = 0,
+    _reserved_bit_27: u1 = 0,
+    _reserved_bit_28: u1 = 0,
+    _reserved_bit_29: u1 = 0,
+    _reserved_bit_30: u1 = 0,
+    _reserved_bit_31: u1 = 0,
+
+    /// Specifies that the image can be used as the source of a transfer command.
+    pub const transfer_src_bit = Self{ .transfer_src_bit_enabled = true };
+    /// Specifies that the image can be used as the destination of a transfer command.
+    pub const transfer_dst_bit = Self{ .transfer_dst_bit_enabled = true };
+    /// Specifies that the image can be used to create a ImageView suitable for occupying a
+    /// DescriptorSet slot either of type sampled_image or combined_image_sampler, and be sampled
+    /// by a shader.
+    pub const sampled_bit_bit = Self{ .sampled_bit_enabled = true };
+    /// Specifies that the image can be used to create a ImageView suitable for occupying a
+    /// DescriptorSet slot of type storage_image.
+    pub const storage_bit = Self{ .storage_bit_enabled = true };
+    /// Specifies that the image can be used to create an ImageView suitable for use as a color or
+    /// resolve attachment in a Framebuffer.
+    pub const color_attachment_bit = Self{ .color_attachment_bit_enabled = true };
+    /// Specifies that the image can be used to create a ImageView suitable for use as a
+    /// depth/stencil or depth/stencil resolve attachment in a Framebuffer.
+    pub const depth_stencil_attachment_bit = Self{ .depth_stencil_attachment_bit_enabled = true };
+    /// Specifies that implementations may support using memory allocations with the
+    /// lazily_allocated_bit to back an image with this usage.
+    pub const transient_attachment_bit = Self{ .transient_attachment_bit_enabled = true };
+    /// specifies that the image can be used to create a ImageView suitable for occupying
+    /// DescriptorSet slot of type input_attachment;
+    pub const input_attachment_bit = Self{ .input_attachment_bit_enabled = true };
+    /// Specifies that the image can be used to create a ImageView suitable for use as a fragment
+    /// density map image.
+    pub const fragment_shading_rate_attachment_bit = Self{ .fragment_shading_rate_attachment_bit_enabled = true };
+    /// Specifies that the image can be used to create a VkImageView suitable for use as a fragment
+    /// shading rate attachment or shading rate image
+    pub const fragment_density_map_bit = Self{ .fragment_density_map_bit_enabled = true };
+    /// Specifies that the image can be used as a decode output picture in a video decode
+    /// operation.
+    pub const video_decode_dst_bit = Self{ .video_decode_dst_bit_enabled = true };
+    /// Reserved for future use.
+    pub const video_decode_src_bit = Self{ .video_decode_src_bit_enabled = true };
+    /// Specifies that the image can be used as an output reconstructed picture or an input
+    /// reference picture in a video decode operation.
+    pub const video_decode_dpb_bit = Self{ .video_decode_dpb_bit_enabled = true };
+    /// Reserved for future use.
+    pub const video_encode_dst_bit = Self{ .video_encode_dst_bit_enabled = true };
+    /// Specifies that the image can be used as an encode input picture in a video encode
+    /// operation.
+    pub const video_encode_src_bit = Self{ .video_encode_src_bit_enabled = true };
+    /// Specifies that the image can be used as an output reconstructed picture or an input
+    /// reference picture in a video encode operation.
+    pub const video_encode_dpb_bit = Self{ .video_encode_dpb_bit_enabled = true };
+    pub const invocation_mask_bit_huawei = Self{ .invocation_mask_bit_huawei_enabled = true };
+    /// Specifies that the image can be transitioned to the attachment_feedback_loop_optimal_ext
+    /// layout to be used as a color or depth/stencil attachment in a Framebuffer and/or as a
+    /// read-only input resource in a shader (sampled image, combined image sampler or input
+    /// attachment) in the same render pass.
+    pub const attachment_feedback_loop_bit_ext = Self{ .attachment_feedback_loop_bit_ext_enabled = true };
+    pub const sample_weight_bit_qcom = Self{ .sample_weight_bit_qcom_enabled = true };
+    pub const sample_block_match_bit_qcom = Self{ .sample_block_match_bit_qcom_enabled = true };
+    pub const host_transfer_bit_ext = Self{ .host_transfer_bit_ext_enabled = true };
 };
 
 /// Structure describing the fine-grained features that can be supported by an implementation
@@ -512,7 +715,112 @@ pub const SampleCountFlags = packed struct(u32) {
     pub const sixty_four_bit = Self{ .sixty_four_bit_enabled = true };
 };
 
+/// Structure describing capabilities of a surface
+/// Original: `VkSurfaceCapabilitiesKHR`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkSurfaceCapabilitiesKHR.html
+pub const SurfaceCapabilitiesKhr = extern struct {
+    /// The minimum number of images the specified device supports for a swapchain created for the
+    /// surface, and will be at least one.
+    min_image_count: u32,
+    /// The maximum number of images the specified device supports for a swapchain created for the
+    /// surface, and will be either 0, or greater than or equal to minImageCount.
+    max_image_count: u32,
+    /// The current width and height of the surface, or the special value indicating that the
+    /// surface size will be determined by the extent of a swapchain targeting the surface.
+    current_extent: Extent2d,
+    /// The smallest valid swapchain extent for the surface on the specified device.
+    min_image_extent: Extent2d,
+    /// The largest valid swapchain extent for the surface on the specified device.
+    max_image_extent: Extent3d,
+    /// The maximum number of layers presentable images can have for a swapchain created for this
+    /// device and surface, and will be at least one.
+    max_image_array_layers: u32,
+    /// A bitmask of VkSurfaceTransformFlagBitsKHR indicating the presentation transforms supported
+    /// for the surface on the specified device. At least one bit will be set.
+    supported_transforms: SurfaceTransformFlagsKhr,
+    /// Value indicating the surface’s current transform relative to the presentation engine’s
+    /// natural orientation.
+    current_transform: SurfaceTransformFlagsKhr,
+    /// A bitmask of VkCompositeAlphaFlagBitsKHR, representing the alpha compositing modes
+    /// supported by the presentation engine for the surface on the specified device, and at least
+    /// one bit will be set.
+    supported_composite_alpha: CompositeAlphaFlagsKhr,
+    /// a bitmask of VkImageUsageFlagBits representing the ways the application can use the presentable images of a swapchain
+    supported_usage_flags: ImageUsageFlags,
+};
+
+/// Structure describing a supported swapchain format-color space pair
+/// Original: `VkSurfaceFormatKhr`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkSurfaceFormatKHR.html
+pub const SurfaceFormatKhr = extern struct {
+    /// A `Format` that is compatible with the specified surface.
+    format: Format,
+    /// A presentation `ColorSpaceKHR` that is compatible with the surface.
+    color_space: ColorSpaceKhr,
+};
+
+/// Bitmask of VkSurfaceTransformFlagBitsKHR
+/// Original: `VkSurfaceTransformFlagsKHR`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkSurfaceTransformFlagsKHR.html
+pub const SurfaceTransformFlagsKhr = packed struct(u32) {
+    const Self = @This();
+
+    identity_bit_khr_enabled: bool = false,
+    rotate_90_bit_khr_enabled: bool = false,
+    rotate_180_bit_khr_enabled: bool = false,
+    rotate_270_bit_khr_enabled: bool = false,
+    horizontal_mirror_bit_khr_enabled: bool = false,
+    horizontal_rotate_90_bit_khr_enabled: bool = false,
+    horizontal_rotate_180_bit_khr_enabled: bool = false,
+    horizontal_rotate_270_bit_khr_enabled: bool = false,
+    inherit_bit_khr_enabled: bool = false,
+    _reserved_bit_9: u1 = 0,
+    _reserved_bit_10: u1 = 0,
+    _reserved_bit_11: u1 = 0,
+    _reserved_bit_12: u1 = 0,
+    _reserved_bit_13: u1 = 0,
+    _reserved_bit_14: u1 = 0,
+    _reserved_bit_15: u1 = 0,
+    _reserved_bit_16: u1 = 0,
+    _reserved_bit_17: u1 = 0,
+    _reserved_bit_18: u1 = 0,
+    _reserved_bit_19: u1 = 0,
+    _reserved_bit_20: u1 = 0,
+    _reserved_bit_21: u1 = 0,
+    _reserved_bit_22: u1 = 0,
+    _reserved_bit_23: u1 = 0,
+    _reserved_bit_24: u1 = 0,
+    _reserved_bit_25: u1 = 0,
+    _reserved_bit_26: u1 = 0,
+    _reserved_bit_27: u1 = 0,
+    _reserved_bit_28: u1 = 0,
+    _reserved_bit_29: u1 = 0,
+    _reserved_bit_30: u1 = 0,
+    _reserved_bit_31: u1 = 0,
+
+    /// Specifies that image content is presented without being transformed.
+    pub const identity_bit_khr = Self{ .identity_bit_khr_enabled = true };
+    /// Specifies that image content is rotated 90 degrees clockwise.
+    pub const rotate_90_bit_khr = Self{ .rotate_90_bit_khr_enabled = true };
+    /// Specifies that image content is rotated 180 degrees clockwise.
+    pub const rotate_180_bit_khr = Self{ .rotate_180_bit_khr_enabled = true };
+    /// Specifies that image content is rotated 270 degrees clockwise.
+    pub const rotate_270_bit_khr = Self{ .rotate_270_bit_khr_enabled = true };
+    /// Specifies that image content is mirrored horizontally.
+    pub const horizontal_mirror_bit_khr = Self{ .horizontal_mirror_bit_khr_enabled = true };
+    /// Specifies that image content is mirrored horizontally, then rotated 90 degrees clockwise.
+    pub const horizontal_rotate_90_bit_khr = Self{ .horizontal_rotate_90_bit_khr_enabled = true };
+    /// Specifies that image content is mirrored horizontally, then rotated 180 degrees clockwise.
+    pub const horizontal_rotate_180_bit_khr = Self{ .horizontal_rotate_180_bit_khr_enabled = true };
+    /// Specifies that image content is mirrored horizontally, then rotated 270 degrees clockwise.
+    pub const horizontal_rotate_270_bit_khr = Self{ .horizontal_rotate_270_bit_khr_enabled = true };
+    /// Specifies that the presentation transform is not specified, and is instead determined by
+    /// platform-specific considerations and mechanisms outside Vulkan.
+    pub const inherit_bit_khr = Self{ .inherit_bit_khr_enabled = true };
+};
+
 extern fn vkGetPhysicalDeviceFeatures(physicalDevice: PhysicalDevice, pFeatures: *PhysicalDeviceFeatures) void;
+extern fn vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice: PhysicalDevice, surface: SurfaceKhr, pSurfaceCapabilities: *SurfaceCapabilitiesKhr) Result;
 extern fn vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice: PhysicalDevice, queueFamilyIndex: u32, surface: SurfaceKhr, pSupported: *bool) Result;
 extern fn vkGetPhysicalDeviceProperties(physicalDevice: PhysicalDevice, pProperties: *PhysicalDeviceProperties) void;
 extern fn vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *u32, pQueueFamilyProperties: ?[*]QueueFamilyProperties) void;

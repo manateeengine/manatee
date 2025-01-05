@@ -80,7 +80,11 @@ pub const VulkanGpu = struct {
             }
         }
 
-        // Create Logical Device
+        if (best_physical_device == null) {
+            return error.no_suitable_physical_device;
+        }
+
+        // Create Queues
         const queue_priorities: [1]f32 = .{1.0};
         const queue_create_infos: [2]vulkan.DeviceQueueCreateInfo = .{
             vulkan.DeviceQueueCreateInfo{
@@ -95,10 +99,23 @@ pub const VulkanGpu = struct {
             },
         };
 
+        // Create Device
+        const device_extensions: []const [*:0]const u8 = switch (builtin.target.os.tag) {
+            .macos => &.{
+                "VK_KHR_swapchain",
+            },
+            .windows => &.{
+                "VK_KHR_swapchain",
+            },
+            else => &.{},
+        };
+
         const device_create_info = vulkan.DeviceCreateInfo{
             .queue_create_info_count = queue_create_infos.len,
             .p_queue_create_infos = &queue_create_infos,
             .p_enabled_features = &best_physical_device.?.features,
+            .pp_enabled_extension_names = device_extensions.ptr,
+            .enabled_extension_count = @intCast(device_extensions.len),
         };
         var device = try vulkan.Device.init(best_physical_device.?.device, &device_create_info);
 
@@ -137,7 +154,8 @@ pub const VulkanGpu = struct {
     }
 };
 
-/// A Manatee-Specific struct that contains a Vulkan Physical Device handle, all of its
+/// A Manatee-specific struct that contains a Vulkan Physical Device handle, as well as its
+/// features, properties, relevant queue indices, and a score used for picking the best device
 const ManateePhysicalDevice = struct {
     const Self = @This();
     device: vulkan.PhysicalDevice,
@@ -170,7 +188,7 @@ const ManateePhysicalDevice = struct {
 
             // Set present queue family index
             if (queue_family_index_present == invalid_queue_family_index) {
-                const has_present_support = try physical_device.getSurfaceSupportKHR(@intCast(idx), surface);
+                const has_present_support = try physical_device.getSurfaceSupportKhr(@intCast(idx), surface);
                 if (has_present_support) {
                     queue_family_index_present = @intCast(idx);
                 }
@@ -194,6 +212,14 @@ const ManateePhysicalDevice = struct {
             score = 1;
         }
 
+        // If a device has any invalid queue indexes, we'll set the score to 0 as we can't use a
+        // device with incomplete queues
+        if (queue_family_index_graphics == invalid_queue_family_index or queue_family_index_present == invalid_queue_family_index) {
+            score = 0;
+        }
+
+        // TODO: I should probably check device swapchain support here
+
         return Self{
             .device = physical_device.*,
             .features = features,
@@ -202,5 +228,20 @@ const ManateePhysicalDevice = struct {
             .queue_family_index_present = queue_family_index_present,
             .score = score,
         };
+    }
+};
+
+/// A Manatee-specific struct that contains swapchain capabilities, formats, and present modes for
+/// a given PhysicalDevice
+const ManateeSwapchainSupportDetails = struct {
+    const Self = @This();
+    capabilities: vulkan.SurfaceCapabilitiesKhr,
+    formats: []vulkan.SurfaceFormatKhr,
+    present_modes: []vulkan.PresentModeKhr,
+
+    pub fn init(physical_device: ManateePhysicalDevice) Self {
+        _ = physical_device;
+        // TODO
+        return Self{};
     }
 };
