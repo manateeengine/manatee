@@ -23,21 +23,19 @@ const Window = @import("../window.zig").Window;
 /// Vulkan (and other external dynamic libraries) can be used within Zig.
 pub const VulkanGpu = struct {
     allocator: std.mem.Allocator,
-    // device: *vulkan.core.Device,
-    instance: vulkan.core.Instance,
-    // surface: vulkan.core.SurfaceKHR,
+    device: vulkan.Device,
+    instance: vulkan.Instance,
+    queue_graphics: vulkan.Queue,
+    surface: vulkan.SurfaceKhr,
 
     pub fn init(allocator: std.mem.Allocator, app: *const App, window: *Window) !VulkanGpu {
-        _ = app;
-        _ = window;
-
         // Create Instance
-        const app_info = vulkan.core.ApplicationInfo{
-            .api_version = vulkan.core.api_version_1_0,
+        const app_info = vulkan.ApplicationInfo{
+            .api_version = vulkan.api_version_1_0,
             .p_application_name = "Manatee Game",
-            .application_version = vulkan.core.makeApiVersion(0, 0, 1, 0),
+            .application_version = vulkan.makeApiVersion(0, 0, 1, 0),
             .p_engine_name = "Manatee",
-            .engine_version = vulkan.core.makeApiVersion(0, 0, 1, 0),
+            .engine_version = vulkan.makeApiVersion(0, 0, 1, 0),
         };
         const instance_extensions: []const [*:0]const u8 = switch (builtin.target.os.tag) {
             .macos => &.{
@@ -51,24 +49,61 @@ pub const VulkanGpu = struct {
             },
             else => &.{},
         };
-        const instance_create_info = vulkan.core.InstanceCreateInfo{
+        const instance_create_info = vulkan.InstanceCreateInfo{
             .enabled_layer_count = 0,
             .p_application_info = &app_info,
             .pp_extension_names = instance_extensions.ptr,
             .enabled_extension_count = @intCast(instance_extensions.len),
             // TODO: Figure out if this only ever needs to be loaded on MacOS?
-            .flags = vulkan.core.InstanceCreateFlags{ .enumerate_portability_bit_khr = true },
+            .flags = vulkan.InstanceCreateFlags{ .enumerate_portability_bit_khr = true },
         };
-        var instance = try vulkan.core.Instance.init(&instance_create_info, null);
+        var instance = try vulkan.Instance.init(&instance_create_info);
 
         // Determine the Best Physical Device
         const physical_devices = try instance.enumeratePhysicalDevices(allocator);
         defer allocator.free(physical_devices);
 
+        var best_physical_device: ?ManateePhysicalDevice = null;
+        var best_physical_device_score: u32 = 0;
+
+        for (physical_devices) |physical_device| {
+            // TODO: There HAS to be a better way to do this than to const cast???
+            const manatee_physical_device = try ManateePhysicalDevice.init(allocator, @constCast(&physical_device));
+
+            if (manatee_physical_device.score > best_physical_device_score) {
+                best_physical_device = manatee_physical_device;
+                best_physical_device_score = manatee_physical_device.score;
+            }
+        }
+
+        // Create Logical Device
+        const queue_priorities: [1]f32 = .{1.0};
+        const queue_create_infos: [1]vulkan.DeviceQueueCreateInfo = .{vulkan.DeviceQueueCreateInfo{
+            .queue_count = 1,
+            .queue_family_index = best_physical_device.?.queue_family_index_graphics,
+            .p_queue_priorities = &queue_priorities,
+        }};
+
+        const device_create_info = vulkan.DeviceCreateInfo{
+            .queue_create_info_count = queue_create_infos.len,
+            .p_queue_create_infos = &queue_create_infos,
+            .p_enabled_features = &best_physical_device.?.features,
+        };
+        var device = try vulkan.Device.init(best_physical_device.?.device, &device_create_info);
+
+        // Create Graphics Queue
+        const queue_graphics = device.getQueue(best_physical_device.?.queue_family_index_graphics, 0);
+
+        // Create Surface
+        const surface = try vulkan.SurfaceKhr.init(instance, app.getNativeApp(), window.getNativeWindow());
+
         std.debug.print("Vulkan Initialized Successfully!\n", .{});
         return VulkanGpu{
             .allocator = allocator,
+            .device = device,
             .instance = instance,
+            .queue_graphics = queue_graphics,
+            .surface = surface,
         };
     }
 
@@ -85,12 +120,61 @@ pub const VulkanGpu = struct {
 
     fn deinit(ctx: *anyopaque) void {
         const self: *VulkanGpu = @ptrCast(@alignCast(ctx));
-        self.instance.deinit(null);
+        self.device.deinit();
+        self.instance.deinit();
         self.allocator.destroy(self);
     }
 };
 
 /// A Manatee-Specific struct that contains a Vulkan Physical Device handle, all of its
 const ManateePhysicalDevice = struct {
+    const Self = @This();
+    device: vulkan.PhysicalDevice,
+    features: vulkan.PhysicalDeviceFeatures,
+    properties: vulkan.PhysicalDeviceProperties,
+    queue_family_index_graphics: u32,
+    score: u32,
 
-}
+    pub fn init(allocator: std.mem.Allocator, physical_device: *vulkan.PhysicalDevice) !Self {
+        const features = physical_device.getFeatures();
+        const properties = physical_device.getProperties();
+
+        const queue_family_properties = try physical_device.getQueueFamilyProperties(allocator);
+        defer allocator.free(queue_family_properties);
+
+        var queue_family_index_graphics: u32 = std.math.maxInt(u32);
+
+        for (queue_family_properties, 0..) |queue_family, idx| {
+            if (queue_family_index_graphics == std.math.maxInt(u32) and @as(u32, @bitCast(queue_family.queue_flags)) & @as(u32, @bitCast(vulkan.QueueFlagBits.graphics_bit)) != 0) {
+                queue_family_index_graphics = @intCast(idx);
+            }
+
+            // TODO: More will come here as I progress with the tutorial
+        }
+
+        var score: u32 = 0;
+        // Discrete GPUs have a significant performance advantage
+        if (properties.device_type == .discrete_gpu) {
+            score += 1000;
+        }
+
+        // Maximum possible size of textures affects graphics quality
+        score += properties.limits.max_image_dimension_2d;
+
+        // We want to heavily discourage use of devices that don't have geometry shader support,
+        // however for Apple devices with integrated GPUs (such as M1 MacBooks), their GPU will
+        // never support geometry shaders (due to a lack of support in the Metal API), so we'll set
+        // the device's score to 1 just to be on the safe side
+        if (features.geometry_shader == 0) {
+            score = 1;
+        }
+
+        return Self{
+            .device = physical_device.*,
+            .features = features,
+            .properties = properties,
+            .queue_family_index_graphics = queue_family_index_graphics,
+            .score = score,
+        };
+    }
+};

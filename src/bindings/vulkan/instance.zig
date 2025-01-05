@@ -11,12 +11,14 @@ const StructureType = @import("structure_type.zig").StructureType;
 pub const Instance = enum(usize) {
     const Self = @This();
 
-    pub fn init(create_info: *const InstanceCreateInfo, allocation_callbacks: ?*AllocationCallbacks) !Self {
-        return try createInstance(create_info, allocation_callbacks);
+    /// TODO: Figure out how I want to document manatee-specific init functions
+    pub fn init(create_info: *const InstanceCreateInfo) !Self {
+        return try createInstance(create_info, null);
     }
 
-    pub fn deinit(self: *Self, allocation_callbacks: ?*AllocationCallbacks) void {
-        return self.destroyInstance(allocation_callbacks);
+    /// TODO: Figure out how I want to document manatee-specific deinit functions
+    pub fn deinit(self: *Self) void {
+        return self.destroyInstance(null);
     }
 
     /// Create a new Vulkan instance
