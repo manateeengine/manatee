@@ -59,7 +59,7 @@ pub const SurfaceKhr = enum(u32) {
     /// Create a VkSurfaceKHR object for a Win32 native window
     /// Original: `vkCreateWin32SurfaceKHR`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateWin32SurfaceKHR.html
-    pub fn createWin32SurfaceKhr(instance: Instance, create_info: *const MetalSurfaceCreateInfoExt, allocation_callbacks: ?*const AllocationCallbacks) !Self {
+    pub fn createWin32SurfaceKhr(instance: Instance, create_info: *const Win32SurfaceCreateInfoKhr, allocation_callbacks: ?*const AllocationCallbacks) !Self {
         var surface: Self = undefined;
         if (vkCreateWin32SurfaceKHR(instance, create_info, allocation_callbacks, &surface) != .success) {
             return error.metal_surface_creation_failed;
