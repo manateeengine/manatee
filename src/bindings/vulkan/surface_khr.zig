@@ -9,13 +9,13 @@ const StructureType = @import("structure_type.zig").StructureType;
 /// Opaque handle to a surface object
 /// Original: `VkSurfaceKHR`
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkSurfaceKHR.html
-pub const SurfaceKhr = enum(u32) {
+pub const SurfaceKhr = opaque {
     const Self = @This();
 
     /// TODO: Figure out how I want to document manatee-specific init functions
     /// Note: This function handles SurfaceKhr creation for ALL supported operating systems. Please
     /// make sure you have all appropriate extensions enabled when setting up your instance
-    pub fn init(instance: Instance, native_app: *anyopaque, native_window: *anyopaque) !Self {
+    pub fn init(instance: *Instance, native_app: *anyopaque, native_window: *anyopaque) !*Self {
         switch (builtin.target.os.tag) {
             .macos => {
                 const apple = @import("../apple.zig");
@@ -41,15 +41,15 @@ pub const SurfaceKhr = enum(u32) {
     }
 
     /// TODO: Figure out how I want to document manatee-specific deinit functions
-    pub fn deinit(self: *Self, instance: Instance) void {
+    pub fn deinit(self: *Self, instance: *Instance) void {
         return self.destroySurface(instance, null);
     }
 
     /// Create a VkSurfaceKHR object for CAMetalLayer
     /// Original: `vkCreateMetalSurfaceEXT`
     /// https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateMetalSurfaceEXT.html
-    pub fn createMetalSurfaceExt(instance: Instance, create_info: *const MetalSurfaceCreateInfoExt, allocation_callbacks: ?*const AllocationCallbacks) !Self {
-        var surface: Self = undefined;
+    pub fn createMetalSurfaceExt(instance: *Instance, create_info: *const MetalSurfaceCreateInfoExt, allocation_callbacks: ?*const AllocationCallbacks) !*Self {
+        var surface: *Self = undefined;
         if (vkCreateMetalSurfaceEXT(instance, create_info, allocation_callbacks, &surface) != .success) {
             return error.metal_surface_creation_failed;
         }
@@ -59,8 +59,8 @@ pub const SurfaceKhr = enum(u32) {
     /// Create a VkSurfaceKHR object for a Win32 native window
     /// Original: `vkCreateWin32SurfaceKHR`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateWin32SurfaceKHR.html
-    pub fn createWin32SurfaceKhr(instance: Instance, create_info: *const Win32SurfaceCreateInfoKhr, allocation_callbacks: ?*const AllocationCallbacks) !Self {
-        var surface: Self = undefined;
+    pub fn createWin32SurfaceKhr(instance: *Instance, create_info: *const Win32SurfaceCreateInfoKhr, allocation_callbacks: ?*const AllocationCallbacks) !*Self {
+        var surface: *Self = undefined;
         if (vkCreateWin32SurfaceKHR(instance, create_info, allocation_callbacks, &surface) != .success) {
             return error.metal_surface_creation_failed;
         }
@@ -70,7 +70,7 @@ pub const SurfaceKhr = enum(u32) {
     /// Destroy a VkSurfaceKHR object
     /// Original: `vkDestroySurfaceKHR`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroySurfaceKHR.html
-    pub fn destroySurface(self: Self, instance: Instance, allocation_callbacks: ?*const AllocationCallbacks) void {
+    pub fn destroySurface(self: *Self, instance: *Instance, allocation_callbacks: ?*const AllocationCallbacks) void {
         return vkDestroySurfaceKHR(instance, self, allocation_callbacks);
     }
 };
@@ -96,6 +96,6 @@ pub const Win32SurfaceCreateInfoKhr = extern struct {
     hwnd: *win32.wnd_msg.Window,
 };
 
-extern fn vkCreateMetalSurfaceEXT(instance: Instance, pCreateInfo: *const MetalSurfaceCreateInfoExt, pAllocator: ?*const AllocationCallbacks, pSurface: *SurfaceKhr) Result;
-extern fn vkCreateWin32SurfaceKHR(instance: Instance, pCreateInfo: *const Win32SurfaceCreateInfoKhr, pAllocator: ?*const AllocationCallbacks, surface: *SurfaceKhr) Result;
-extern fn vkDestroySurfaceKHR(instance: Instance, surface: SurfaceKhr, pAllocator: ?*const AllocationCallbacks) void;
+extern fn vkCreateMetalSurfaceEXT(instance: *Instance, pCreateInfo: *const MetalSurfaceCreateInfoExt, pAllocator: ?*const AllocationCallbacks, pSurface: **SurfaceKhr) Result;
+extern fn vkCreateWin32SurfaceKHR(instance: *Instance, pCreateInfo: *const Win32SurfaceCreateInfoKhr, pAllocator: ?*const AllocationCallbacks, surface: **SurfaceKhr) Result;
+extern fn vkDestroySurfaceKHR(instance: *Instance, surface: *SurfaceKhr, pAllocator: ?*const AllocationCallbacks) void;

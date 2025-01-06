@@ -9,11 +9,11 @@ const PhysicalDeviceFeatures = physical_device.PhysicalDeviceFeatures;
 /// Opaque handle to a device object
 /// Original: `VkDevice`
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkDevice.html
-pub const Device = enum(usize) {
+pub const Device = opaque {
     const Self = @This();
 
     /// TODO: Figure out how I want to document manatee-specific init functions
-    pub fn init(physical: PhysicalDevice, device_create_info: *const DeviceCreateInfo) !Self {
+    pub fn init(physical: *PhysicalDevice, device_create_info: *const DeviceCreateInfo) !*Self {
         return createDevice(physical, device_create_info, null);
     }
 
@@ -25,8 +25,8 @@ pub const Device = enum(usize) {
     /// Create a new device instance
     /// Original: `vkCreateDevice`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateDevice.html
-    pub fn createDevice(physical: PhysicalDevice, device_create_info: *const DeviceCreateInfo, allocator_callbacks: ?*const AllocationCallbacks) !Self {
-        var device: Self = undefined;
+    pub fn createDevice(physical: *PhysicalDevice, device_create_info: *const DeviceCreateInfo, allocator_callbacks: ?*const AllocationCallbacks) !*Self {
+        var device: *Self = undefined;
         if (vkCreateDevice(physical, device_create_info, allocator_callbacks, &device) != .success) {
             return error.device_creation_failed;
         }
@@ -36,15 +36,15 @@ pub const Device = enum(usize) {
     /// Destroy a logical device
     /// Original: `vkDestroyDevice`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyDevice.html
-    pub fn destroyDevice(self: Self, allocator_callbacks: ?*const AllocationCallbacks) void {
+    pub fn destroyDevice(self: *Self, allocator_callbacks: ?*const AllocationCallbacks) void {
         return vkDestroyDevice(self, allocator_callbacks);
     }
 
     /// Get a queue handle from a device
     /// Original: `vkGetDeviceQueue`
     /// https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetDeviceQueue.html
-    pub fn getQueue(self: Self, queue_family_index: u32, queue_index: u32) Queue {
-        var queue: Queue = undefined;
+    pub fn getQueue(self: *Self, queue_family_index: u32, queue_index: u32) *Queue {
+        var queue: *Queue = undefined;
         vkGetDeviceQueue(self, queue_family_index, queue_index, &queue);
         return queue;
     }
@@ -53,9 +53,7 @@ pub const Device = enum(usize) {
 /// Opaque handle to a queue object
 /// Original: `VkQueue`
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkQueue.html
-pub const Queue = enum(usize) {
-    const Self = @This();
-};
+pub const Queue = opaque {};
 
 /// Structure specifying parameters of a newly created device
 /// Original: `VkDeviceCreateInfo`
@@ -109,6 +107,6 @@ pub const DeviceQueueCreateInfo = extern struct {
     p_queue_priorities: [*]const f32,
 };
 
-extern fn vkCreateDevice(physicalDevice: PhysicalDevice, *const DeviceCreateInfo, pAllocator: ?*const AllocationCallbacks, pDevice: *Device) Result;
-extern fn vkDestroyDevice(device: Device, pAllocator: ?*const AllocationCallbacks) void;
-extern fn vkGetDeviceQueue(device: Device, queueFamilyIndex: u32, queueIndex: u32, pQueue: *Queue) void;
+extern fn vkCreateDevice(physicalDevice: *PhysicalDevice, *const DeviceCreateInfo, pAllocator: ?*const AllocationCallbacks, pDevice: **Device) Result;
+extern fn vkDestroyDevice(device: *Device, pAllocator: ?*const AllocationCallbacks) void;
+extern fn vkGetDeviceQueue(device: *Device, queueFamilyIndex: u32, queueIndex: u32, pQueue: **Queue) void;

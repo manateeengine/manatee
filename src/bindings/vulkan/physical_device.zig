@@ -8,13 +8,13 @@ const SurfaceKhr = @import("surface_khr.zig").SurfaceKhr;
 /// Opaque handle to a physical device object
 /// Original: `VhPhysicalDevice`
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPhysicalDevice.html
-pub const PhysicalDevice = enum(usize) {
+pub const PhysicalDevice = opaque {
     const Self = @This();
 
     /// Reports capabilities of a physical device
     /// Original: `vkGetPhysicalDeviceFeatures`
     /// https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceProperties.html
-    pub fn getFeatures(self: Self) PhysicalDeviceFeatures {
+    pub fn getFeatures(self: *Self) PhysicalDeviceFeatures {
         var physical_device_features: PhysicalDeviceFeatures = undefined;
         vkGetPhysicalDeviceFeatures(self, &physical_device_features);
         return physical_device_features;
@@ -23,7 +23,7 @@ pub const PhysicalDevice = enum(usize) {
     /// Returns properties of a physical device
     /// Original: `vkGetPhysicalDeviceProperties`
     /// https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceProperties.html
-    pub fn getProperties(self: Self) PhysicalDeviceProperties {
+    pub fn getProperties(self: *Self) PhysicalDeviceProperties {
         var physical_device_properties: PhysicalDeviceProperties = undefined;
         vkGetPhysicalDeviceProperties(self, &physical_device_properties);
         return physical_device_properties;
@@ -32,7 +32,7 @@ pub const PhysicalDevice = enum(usize) {
     /// Reports properties of the queues of the specified physical device
     /// Original: `vkGetPhysicalDeviceQueueFamilyProperties`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceQueueFamilyProperties.html
-    pub fn getQueueFamilyProperties(self: Self, allocator: std.mem.Allocator) ![]QueueFamilyProperties {
+    pub fn getQueueFamilyProperties(self: *Self, allocator: std.mem.Allocator) ![]QueueFamilyProperties {
         var physical_device_queue_family_property_count: u32 = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(self, &physical_device_queue_family_property_count, null);
 
@@ -46,7 +46,7 @@ pub const PhysicalDevice = enum(usize) {
     /// Query surface capabilities
     /// Original: `vkGetSurfaceCapabilitiesKHR`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceCapabilitiesKHR.html
-    pub fn getSurfaceCapabilitiesKhr(self: Self, surface: SurfaceKhr) !SurfaceCapabilitiesKhr {
+    pub fn getSurfaceCapabilitiesKhr(self: *Self, surface: *SurfaceKhr) !SurfaceCapabilitiesKhr {
         var surface_capabilities_khr: SurfaceCapabilitiesKhr = undefined;
         if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(self, surface, &surface_capabilities_khr) != .suboptimal_khr) {
             return error.unable_to_determine_surface_capabilities;
@@ -57,7 +57,7 @@ pub const PhysicalDevice = enum(usize) {
     /// Query if presentation is supported
     /// Original: `vkGetPhysicalDeviceSurfaceSupportKHR`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceSupportKHR.html
-    pub fn getSurfaceSupportKhr(self: Self, queue_family_index: u32, surface: SurfaceKhr) !bool {
+    pub fn getSurfaceSupportKhr(self: *Self, queue_family_index: u32, surface: *SurfaceKhr) !bool {
         var is_supported: bool = undefined;
         if (vkGetPhysicalDeviceSurfaceSupportKHR(self, queue_family_index, surface, &is_supported) != .success) {
             return error.unable_to_determine_surface_support;
@@ -819,8 +819,8 @@ pub const SurfaceTransformFlagsKhr = packed struct(u32) {
     pub const inherit_bit_khr = Self{ .inherit_bit_khr_enabled = true };
 };
 
-extern fn vkGetPhysicalDeviceFeatures(physicalDevice: PhysicalDevice, pFeatures: *PhysicalDeviceFeatures) void;
-extern fn vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice: PhysicalDevice, surface: SurfaceKhr, pSurfaceCapabilities: *SurfaceCapabilitiesKhr) Result;
-extern fn vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice: PhysicalDevice, queueFamilyIndex: u32, surface: SurfaceKhr, pSupported: *bool) Result;
-extern fn vkGetPhysicalDeviceProperties(physicalDevice: PhysicalDevice, pProperties: *PhysicalDeviceProperties) void;
-extern fn vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *u32, pQueueFamilyProperties: ?[*]QueueFamilyProperties) void;
+extern fn vkGetPhysicalDeviceFeatures(physicalDevice: *PhysicalDevice, pFeatures: *PhysicalDeviceFeatures) void;
+extern fn vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice: *PhysicalDevice, surface: *SurfaceKhr, pSurfaceCapabilities: *SurfaceCapabilitiesKhr) Result;
+extern fn vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice: *PhysicalDevice, queueFamilyIndex: u32, surface: *SurfaceKhr, pSupported: *bool) Result;
+extern fn vkGetPhysicalDeviceProperties(physicalDevice: *PhysicalDevice, pProperties: *PhysicalDeviceProperties) void;
+extern fn vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice: *PhysicalDevice, pQueueFamilyPropertyCount: *u32, pQueueFamilyProperties: ?[*]QueueFamilyProperties) void;

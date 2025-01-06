@@ -23,11 +23,11 @@ const Window = @import("../window.zig").Window;
 /// Vulkan (and other external dynamic libraries) can be used within Zig.
 pub const VulkanGpu = struct {
     allocator: std.mem.Allocator,
-    device: vulkan.Device,
-    instance: vulkan.Instance,
-    queue_graphics: vulkan.Queue,
-    queue_present: vulkan.Queue,
-    surface: vulkan.SurfaceKhr,
+    device: *vulkan.Device,
+    instance: *vulkan.Instance,
+    queue_graphics: *vulkan.Queue,
+    queue_present: *vulkan.Queue,
+    surface: *vulkan.SurfaceKhr,
 
     pub fn init(allocator: std.mem.Allocator, app: *const App, window: *Window) !VulkanGpu {
         // Create Instance
@@ -58,14 +58,14 @@ pub const VulkanGpu = struct {
             // TODO: Figure out if this only ever needs to be loaded on MacOS?
             .flags = vulkan.InstanceCreateFlags{ .enumerate_portability_bit_khr = true },
         };
-        var instance = try vulkan.Instance.init(&instance_create_info);
+        const instance = try vulkan.Instance.init(&instance_create_info);
 
         // Create Surface
         const surface = try vulkan.SurfaceKhr.init(instance, app.getNativeApp(), window.getNativeWindow());
 
         // Determine the Best Physical Device
         const physical_devices = try instance.enumeratePhysicalDevices(allocator);
-        defer allocator.free(physical_devices);
+        // defer allocator.free(physical_devices);
 
         var best_physical_device: ?ManateePhysicalDevice = null;
         var best_physical_device_score: u32 = 0;
@@ -110,7 +110,7 @@ pub const VulkanGpu = struct {
         };
 
         const device_create_info = vulkan.DeviceCreateInfo{
-            .queue_create_info_count = queue_create_infos.len,
+            .queue_create_info_count = @intCast(queue_create_infos.len),
             .p_queue_create_infos = &queue_create_infos,
             .p_enabled_features = &best_physical_device.?.features,
             .pp_enabled_extension_names = device_extensions.ptr,
@@ -118,7 +118,7 @@ pub const VulkanGpu = struct {
         };
         var device = try vulkan.Device.init(best_physical_device.?.device, &device_create_info);
 
-        // Get queues from device
+        // // Get queues from device
         const queue_graphics = device.getQueue(best_physical_device.?.queue_family_index_graphics, 0);
         const queue_present = device.getQueue(best_physical_device.?.queue_family_index_present, 0);
 
@@ -146,8 +146,8 @@ pub const VulkanGpu = struct {
 
     fn deinit(ctx: *anyopaque) void {
         const self: *VulkanGpu = @ptrCast(@alignCast(ctx));
-        self.surface.deinit(self.instance);
         self.device.deinit();
+        self.surface.deinit(self.instance);
         self.instance.deinit();
         self.allocator.destroy(self);
     }
@@ -157,14 +157,14 @@ pub const VulkanGpu = struct {
 /// features, properties, relevant queue indices, and a score used for picking the best device
 const ManateePhysicalDevice = struct {
     const Self = @This();
-    device: vulkan.PhysicalDevice,
+    device: *vulkan.PhysicalDevice,
     features: vulkan.PhysicalDeviceFeatures,
     properties: vulkan.PhysicalDeviceProperties,
     queue_family_index_graphics: u32,
     queue_family_index_present: u32,
     score: u32,
 
-    pub fn init(allocator: std.mem.Allocator, physical_device: vulkan.PhysicalDevice, surface: vulkan.SurfaceKhr) !Self {
+    pub fn init(allocator: std.mem.Allocator, physical_device: *vulkan.PhysicalDevice, surface: *vulkan.SurfaceKhr) !Self {
         const invalid_queue_family_index = std.math.maxInt(u32);
 
         const features = physical_device.getFeatures();
@@ -189,6 +189,7 @@ const ManateePhysicalDevice = struct {
             if (queue_family_index_present == invalid_queue_family_index) {
                 const has_present_support = try physical_device.getSurfaceSupportKhr(@intCast(idx), surface);
                 if (has_present_support) {
+                    std.debug.print("This device supports presentation! {}\n", .{idx});
                     queue_family_index_present = @intCast(idx);
                 }
             }

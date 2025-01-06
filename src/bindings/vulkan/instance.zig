@@ -8,11 +8,11 @@ const StructureType = @import("structure_type.zig").StructureType;
 /// Opaque handle to an instance object
 /// Original: `VkInstance`
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkInstance.html
-pub const Instance = enum(usize) {
+pub const Instance = opaque {
     const Self = @This();
 
     /// TODO: Figure out how I want to document manatee-specific init functions
-    pub fn init(create_info: *const InstanceCreateInfo) !Self {
+    pub fn init(create_info: *const InstanceCreateInfo) !*Self {
         return try createInstance(create_info, null);
     }
 
@@ -24,8 +24,8 @@ pub const Instance = enum(usize) {
     /// Create a new Vulkan instance
     /// Original: `VkCreateInstance`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateInstance.html
-    pub fn createInstance(create_info: *const InstanceCreateInfo, allocation_callbacks: ?*AllocationCallbacks) !Self {
-        var instance: Self = undefined;
+    pub fn createInstance(create_info: *const InstanceCreateInfo, allocation_callbacks: ?*AllocationCallbacks) !*Self {
+        var instance: *Self = undefined;
         const result = vkCreateInstance(create_info, allocation_callbacks, &instance);
 
         if (result != Result.success) {
@@ -37,7 +37,7 @@ pub const Instance = enum(usize) {
     /// Enumerates the physical devices accessible to a Vulkan instance
     /// Original: `vkEnumeratePhysicalDevices`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkEnumeratePhysicalDevices.html
-    pub fn enumeratePhysicalDevices(self: Self, allocator: std.mem.Allocator) ![]PhysicalDevice {
+    pub fn enumeratePhysicalDevices(self: *Self, allocator: std.mem.Allocator) ![]*PhysicalDevice {
         var physical_Device_count: u32 = 0;
         _ = vkEnumeratePhysicalDevices(self, &physical_Device_count, null);
 
@@ -45,7 +45,7 @@ pub const Instance = enum(usize) {
             return error.no_physical_devices;
         }
 
-        const physical_devices = try allocator.alloc(PhysicalDevice, physical_Device_count);
+        const physical_devices = try allocator.alloc(*PhysicalDevice, physical_Device_count);
         errdefer allocator.free(physical_devices);
 
         if (vkEnumeratePhysicalDevices(self, &physical_Device_count, physical_devices.ptr) != .success) {
@@ -58,7 +58,7 @@ pub const Instance = enum(usize) {
     /// Destroy an instance of Vulkan
     /// Original: `vkDestroyInstance`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyInstance.html
-    pub fn destroyInstance(self: Self, allocation_callbacks: ?*AllocationCallbacks) void {
+    pub fn destroyInstance(self: *Self, allocation_callbacks: ?*AllocationCallbacks) void {
         vkDestroyInstance(self, allocation_callbacks);
     }
 };
@@ -167,6 +167,6 @@ pub fn makeApiVersion(variant: u3, major: u7, minor: u10, patch: u12) u32 {
     return (@as(u32, variant) << 29) | (@as(u32, major) << 22) | (@as(u32, minor) << 12) | patch;
 }
 
-extern fn vkCreateInstance(pCreateInfo: *const InstanceCreateInfo, pAllocator: ?*const AllocationCallbacks, instance: *Instance) callconv(.c) Result;
-extern fn vkDestroyInstance(instance: Instance, pAllocator: ?*const AllocationCallbacks) void;
-extern fn vkEnumeratePhysicalDevices(instance: Instance, pPhysicalDeviceCount: *u32, pPhysicalDevices: ?[*]PhysicalDevice) Result;
+extern fn vkCreateInstance(pCreateInfo: *const InstanceCreateInfo, pAllocator: ?*const AllocationCallbacks, instance: **Instance) callconv(.c) Result;
+extern fn vkDestroyInstance(instance: *Instance, pAllocator: ?*const AllocationCallbacks) void;
+extern fn vkEnumeratePhysicalDevices(instance: *Instance, pPhysicalDeviceCount: *u32, pPhysicalDevices: ?[*]*PhysicalDevice) Result;
