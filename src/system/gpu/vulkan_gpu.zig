@@ -65,7 +65,7 @@ pub const VulkanGpu = struct {
 
         // Determine the Best Physical Device
         const physical_devices = try instance.enumeratePhysicalDevices(allocator);
-        // defer allocator.free(physical_devices);
+        defer allocator.free(physical_devices);
 
         var best_physical_device: ?ManateePhysicalDevice = null;
         var best_physical_device_score: u32 = 0;
@@ -85,6 +85,7 @@ pub const VulkanGpu = struct {
 
         // Create Queues
         const queue_priorities: [1]f32 = .{1.0};
+
         const queue_create_infos: [2]vulkan.DeviceQueueCreateInfo = .{
             vulkan.DeviceQueueCreateInfo{
                 .queue_count = 1,
@@ -110,7 +111,7 @@ pub const VulkanGpu = struct {
         };
 
         const device_create_info = vulkan.DeviceCreateInfo{
-            .queue_create_info_count = @intCast(queue_create_infos.len),
+            .queue_create_info_count = if (best_physical_device.?.queue_family_index_graphics == best_physical_device.?.queue_family_index_present) 1 else 2,
             .p_queue_create_infos = &queue_create_infos,
             .p_enabled_features = &best_physical_device.?.features,
             .pp_enabled_extension_names = device_extensions.ptr,
@@ -118,11 +119,10 @@ pub const VulkanGpu = struct {
         };
         var device = try vulkan.Device.init(best_physical_device.?.device, &device_create_info);
 
-        // // Get queues from device
+        // Get queues from device
         const queue_graphics = device.getQueue(best_physical_device.?.queue_family_index_graphics, 0);
         const queue_present = device.getQueue(best_physical_device.?.queue_family_index_present, 0);
 
-        std.debug.print("Vulkan Initialized Successfully!\n", .{});
         return VulkanGpu{
             .allocator = allocator,
             .device = device,
@@ -176,6 +176,8 @@ const ManateePhysicalDevice = struct {
         var queue_family_index_graphics: u32 = invalid_queue_family_index;
         var queue_family_index_present: u32 = invalid_queue_family_index;
 
+        std.debug.print("Iterating Over {} Queue Families\n", .{queue_family_properties.len});
+
         for (queue_family_properties, 0..) |queue_family, idx| {
             // Set graphics queue family index
             if (queue_family_index_graphics == invalid_queue_family_index) {
@@ -189,7 +191,6 @@ const ManateePhysicalDevice = struct {
             if (queue_family_index_present == invalid_queue_family_index) {
                 const has_present_support = try physical_device.getSurfaceSupportKhr(@intCast(idx), surface);
                 if (has_present_support) {
-                    std.debug.print("This device supports presentation! {}\n", .{idx});
                     queue_family_index_present = @intCast(idx);
                 }
             }
@@ -214,7 +215,8 @@ const ManateePhysicalDevice = struct {
 
         // If a device has any invalid queue indexes, we'll set the score to 0 as we can't use a
         // device with incomplete queues
-        if (queue_family_index_graphics == invalid_queue_family_index or queue_family_index_present == invalid_queue_family_index) {
+        // if (queue_family_index_graphics == invalid_queue_family_index or queue_family_index_present == invalid_queue_family_index) {
+        if (queue_family_index_graphics == invalid_queue_family_index) {
             score = 0;
         }
 
