@@ -48,10 +48,48 @@ pub const PhysicalDevice = opaque {
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceCapabilitiesKHR.html
     pub fn getSurfaceCapabilitiesKhr(self: *Self, surface: *SurfaceKhr) !SurfaceCapabilitiesKhr {
         var surface_capabilities_khr: SurfaceCapabilitiesKhr = undefined;
-        if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(self, surface, &surface_capabilities_khr) != .suboptimal_khr) {
+        if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(self, surface, &surface_capabilities_khr) != .success) {
             return error.unable_to_determine_surface_capabilities;
         }
         return surface_capabilities_khr;
+    }
+
+    /// Query color formats supported by surface
+    /// Original: `vkGetPhysicalDeviceSurfaceFormatsKHR`
+    /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceFormatsKHR.html
+    pub fn getSurfaceFormatsKhr(self: *Self, allocator: std.mem.Allocator, surface: *SurfaceKhr) ![]SurfaceFormatKhr {
+        var surface_formats_count: u32 = 0;
+        _ = vkGetPhysicalDeviceSurfaceFormatsKHR(self, surface, &surface_formats_count, null);
+
+        // if (surface_formats_count == 0) {
+        //     return &[0]SurfaceFormatKhr{};
+        // }
+
+        const surface_formats = try allocator.alloc(SurfaceFormatKhr, surface_formats_count);
+        if (vkGetPhysicalDeviceSurfaceFormatsKHR(self, surface, &surface_formats_count, surface_formats.ptr) != .success) {
+            return error.unable_to_get_surface_formats;
+        }
+
+        return surface_formats;
+    }
+
+    /// Query supported presentation modes
+    /// Original: `vkGetPhysicalDeviceSurfacePresentModesKHR`
+    /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfacePresentModesKHR.html
+    pub fn getSurfacePresentModesKhr(self: *Self, allocator: std.mem.Allocator, surface: *SurfaceKhr) ![]PresentModeKhr {
+        var surface_present_modes_count: u32 = 0;
+        _ = vkGetPhysicalDeviceSurfacePresentModesKHR(self, surface, &surface_present_modes_count, null);
+
+        // if (surface_present_modes_count == 0) {
+        //     return &[0]PresentModeKhr{};
+        // }
+
+        const surface_present_modes = try allocator.alloc(PresentModeKhr, surface_present_modes_count);
+        if (vkGetPhysicalDeviceSurfacePresentModesKHR(self, surface, &surface_present_modes_count, surface_present_modes.ptr) != .success) {
+            return error.unable_to_get_surface_present_modes;
+        }
+
+        return surface_present_modes;
     }
 
     /// Query if presentation is supported
@@ -80,7 +118,7 @@ pub const max_physical_device_name_size: usize = 256;
 pub const uuid_size: usize = 16;
 
 /// Supported color space of the presentation engine
-/// Original: `VkColorSlaceKhr`
+/// Original: `VkColorSpaceKhr`
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkColorSpaceKHR.html
 /// TODO: Add enum doc comments
 pub const ColorSpaceKhr = enum(u32) {
@@ -821,6 +859,8 @@ pub const SurfaceTransformFlagsKhr = packed struct(u32) {
 
 extern fn vkGetPhysicalDeviceFeatures(physicalDevice: *PhysicalDevice, pFeatures: *PhysicalDeviceFeatures) void;
 extern fn vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice: *PhysicalDevice, surface: *SurfaceKhr, pSurfaceCapabilities: *SurfaceCapabilitiesKhr) Result;
+extern fn vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice: *PhysicalDevice, surface: *SurfaceKhr, pSurfaceFormatCount: *u32, ?[*]SurfaceFormatKhr) Result;
+extern fn vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice: *PhysicalDevice, surface: *SurfaceKhr, pPresentModeCount: *u32, pPresentModes: ?[*]PresentModeKhr) Result;
 extern fn vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice: *PhysicalDevice, queueFamilyIndex: u32, surface: *SurfaceKhr, pSupported: *bool) Result;
 extern fn vkGetPhysicalDeviceProperties(physicalDevice: *PhysicalDevice, pProperties: *PhysicalDeviceProperties) void;
 extern fn vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice: *PhysicalDevice, pQueueFamilyPropertyCount: *u32, pQueueFamilyProperties: ?[*]QueueFamilyProperties) void;

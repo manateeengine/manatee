@@ -28,6 +28,7 @@ pub const VulkanGpu = struct {
     queue_graphics: *vulkan.Queue,
     queue_present: *vulkan.Queue,
     surface: *vulkan.SurfaceKhr,
+    swapchain: *vulkan.SwapchainKhr,
 
     pub fn init(allocator: std.mem.Allocator, app: *const App, window: *Window) !VulkanGpu {
         // Create Instance
@@ -71,7 +72,7 @@ pub const VulkanGpu = struct {
         var best_physical_device_score: u32 = 0;
 
         for (physical_devices) |physical_device| {
-            const manatee_physical_device = try ManateePhysicalDevice.init(allocator, physical_device, surface);
+            const manatee_physical_device = try ManateePhysicalDevice.init(allocator, physical_device, surface, window);
 
             if (manatee_physical_device.score > best_physical_device_score) {
                 best_physical_device = manatee_physical_device;
@@ -83,18 +84,21 @@ pub const VulkanGpu = struct {
             return error.no_suitable_physical_device;
         }
 
+        const physical_device = best_physical_device.?;
+
         // Create Queues
         const queue_priorities: [1]f32 = .{1.0};
+        const is_queue_shared = physical_device.queue_family_index_graphics == physical_device.queue_family_index_present;
 
         const queue_create_infos: [2]vulkan.DeviceQueueCreateInfo = .{
             vulkan.DeviceQueueCreateInfo{
                 .queue_count = 1,
-                .queue_family_index = best_physical_device.?.queue_family_index_graphics,
+                .queue_family_index = physical_device.queue_family_index_graphics,
                 .p_queue_priorities = &queue_priorities,
             },
             vulkan.DeviceQueueCreateInfo{
                 .queue_count = 1,
-                .queue_family_index = best_physical_device.?.queue_family_index_present,
+                .queue_family_index = physical_device.queue_family_index_present,
                 .p_queue_priorities = &queue_priorities,
             },
         };
@@ -111,17 +115,37 @@ pub const VulkanGpu = struct {
         };
 
         const device_create_info = vulkan.DeviceCreateInfo{
-            .queue_create_info_count = if (best_physical_device.?.queue_family_index_graphics == best_physical_device.?.queue_family_index_present) 1 else 2,
+            .queue_create_info_count = if (is_queue_shared) 1 else 2,
             .p_queue_create_infos = &queue_create_infos,
             .p_enabled_features = &best_physical_device.?.features,
             .pp_enabled_extension_names = device_extensions.ptr,
             .enabled_extension_count = @intCast(device_extensions.len),
         };
-        var device = try vulkan.Device.init(best_physical_device.?.device, &device_create_info);
+        var device = try vulkan.Device.init(physical_device.device, &device_create_info);
 
         // Get queues from device
-        const queue_graphics = device.getQueue(best_physical_device.?.queue_family_index_graphics, 0);
-        const queue_present = device.getQueue(best_physical_device.?.queue_family_index_present, 0);
+        const queue_graphics = device.getQueue(physical_device.queue_family_index_graphics, 0);
+        const queue_present = device.getQueue(physical_device.queue_family_index_present, 0);
+
+        // Create Swapchain
+        const swapchain_create_info = vulkan.SwapchainCreateInfoKhr{
+            .surface = surface,
+            .min_image_count = physical_device.image_count,
+            .image_format = physical_device.surface_format.?.format,
+            .image_color_space = physical_device.surface_format.?.color_space,
+            .image_extent = physical_device.surface_extent,
+            .image_array_layers = 1,
+            .image_usage = vulkan.ImageUsageFlags.color_attachment_bit,
+            .image_sharing_mode = if (is_queue_shared) .exclusive else .concurrent,
+            .queue_family_index_count = if (is_queue_shared) 0 else 2,
+            .queue_family_indices = if (is_queue_shared) null else &[2]u32{ physical_device.queue_family_index_graphics, physical_device.queue_family_index_present },
+            .pre_transform = physical_device.surface_capabilities.current_transform,
+            .composite_alpha = vulkan.CompositeAlphaFlagsKhr.opaque_bit_khr,
+            .present_mode = physical_device.surface_present_mode,
+            .clipped = true,
+            .old_swapchain = null,
+        };
+        const swapchain = try vulkan.SwapchainKhr.init(device, &swapchain_create_info);
 
         return VulkanGpu{
             .allocator = allocator,
@@ -130,6 +154,7 @@ pub const VulkanGpu = struct {
             .queue_graphics = queue_graphics,
             .queue_present = queue_present,
             .surface = surface,
+            .swapchain = swapchain,
         };
     }
 
@@ -146,6 +171,7 @@ pub const VulkanGpu = struct {
 
     fn deinit(ctx: *anyopaque) void {
         const self: *VulkanGpu = @ptrCast(@alignCast(ctx));
+        self.swapchain.deinit(self.device);
         self.device.deinit();
         self.surface.deinit(self.instance);
         self.instance.deinit();
@@ -159,24 +185,35 @@ const ManateePhysicalDevice = struct {
     const Self = @This();
     device: *vulkan.PhysicalDevice,
     features: vulkan.PhysicalDeviceFeatures,
+    image_count: u32,
     properties: vulkan.PhysicalDeviceProperties,
     queue_family_index_graphics: u32,
     queue_family_index_present: u32,
     score: u32,
+    surface_capabilities: vulkan.SurfaceCapabilitiesKhr,
+    surface_extent: vulkan.Extent2d,
+    surface_format: ?vulkan.SurfaceFormatKhr,
+    surface_present_mode: vulkan.PresentModeKhr,
 
-    pub fn init(allocator: std.mem.Allocator, physical_device: *vulkan.PhysicalDevice, surface: *vulkan.SurfaceKhr) !Self {
+    pub fn init(allocator: std.mem.Allocator, physical_device: *vulkan.PhysicalDevice, surface: *vulkan.SurfaceKhr, window: *Window) !Self {
         const invalid_queue_family_index = std.math.maxInt(u32);
 
         const features = physical_device.getFeatures();
         const properties = physical_device.getProperties();
+
+        const surface_formats = try physical_device.getSurfaceFormatsKhr(allocator, surface);
+        defer allocator.free(surface_formats);
+
+        const surface_capabilities = try physical_device.getSurfaceCapabilitiesKhr(surface);
+
+        const surface_present_modes = try physical_device.getSurfacePresentModesKhr(allocator, surface);
+        defer allocator.free(surface_present_modes);
 
         const queue_family_properties = try physical_device.getQueueFamilyProperties(allocator);
         defer allocator.free(queue_family_properties);
 
         var queue_family_index_graphics: u32 = invalid_queue_family_index;
         var queue_family_index_present: u32 = invalid_queue_family_index;
-
-        std.debug.print("Iterating Over {} Queue Families\n", .{queue_family_properties.len});
 
         for (queue_family_properties, 0..) |queue_family, idx| {
             // Set graphics queue family index
@@ -220,47 +257,53 @@ const ManateePhysicalDevice = struct {
             score = 0;
         }
 
-        // TODO: I should probably check device swapchain support here
+        if (surface_formats.len == 0 or surface_present_modes.len == 0) {
+            score = 0;
+        }
+
+        var preferred_surface_format: ?vulkan.SurfaceFormatKhr = null;
+
+        for (surface_formats) |surface_format| {
+            if (surface_format.format == .b8g8r8a8_srgb and surface_format.color_space == .srgb_nonlinear_khr) {
+                preferred_surface_format = surface_format;
+            }
+        }
+
+        if (preferred_surface_format == null) {
+            preferred_surface_format = surface_formats[0];
+        }
+
+        var preferred_surface_present_mode: vulkan.PresentModeKhr = vulkan.PresentModeKhr.fifo_khr;
+
+        for (surface_present_modes) |present_mode| {
+            if (present_mode == .mailbox_khr) {
+                preferred_surface_present_mode = present_mode;
+            }
+        }
+
+        const window_dimensions = window.getDimensions();
+        const surface_extent: vulkan.Extent2d = if (surface_capabilities.current_extent.width != std.math.maxInt(u32)) surface_capabilities.current_extent else vulkan.Extent2d{
+            .width = @max(surface_capabilities.min_image_extent.width, @min(surface_capabilities.max_image_extent.width, window_dimensions.width)),
+            .height = @max(surface_capabilities.min_image_extent.height, @min(surface_capabilities.min_image_extent.height, window_dimensions.height)),
+        };
+
+        var image_count: u32 = surface_capabilities.min_image_count + 1;
+        if (surface_capabilities.max_image_count > 0 and image_count > surface_capabilities.max_image_count) {
+            image_count = surface_capabilities.max_image_count;
+        }
 
         return Self{
             .device = physical_device,
             .features = features,
+            .image_count = image_count,
             .properties = properties,
             .queue_family_index_graphics = queue_family_index_graphics,
             .queue_family_index_present = queue_family_index_present,
             .score = score,
+            .surface_capabilities = surface_capabilities,
+            .surface_extent = surface_extent,
+            .surface_format = preferred_surface_format,
+            .surface_present_mode = preferred_surface_present_mode,
         };
-    }
-};
-
-/// A Manatee-specific struct that contains swapchain capabilities, formats, and present modes for
-/// a given PhysicalDevice
-const ManateeSwapchainSupportDetails = struct {
-    const Self = @This();
-    allocator: std.mem.Allocator,
-    capabilities: vulkan.SurfaceCapabilitiesKhr,
-    formats: []vulkan.SurfaceFormatKhr,
-    present_modes: []vulkan.PresentModeKhr,
-
-    pub fn init(allocator: std.mem.Allocator, physical_device: *vulkan.PhysicalDevice, surface: vulkan.SurfaceKhr) !Self {
-        const capabilities = try physical_device.getSurfaceCapabilitiesKhr(surface);
-
-        const formats = try physical_device.getSurfaceFormats(allocator, surface);
-        errdefer allocator.free(formats);
-
-        const present_modes = try physical_device.getSurfacePresentModes(allocator, surface);
-        errdefer allocator.free(present_modes);
-
-        return Self{
-            .allocator = allocator,
-            .capabilities = capabilities,
-            .formats = formats,
-            .present_modes = present_modes,
-        };
-    }
-
-    pub fn deinit(self: *Self) void {
-        self.allocator.free(self.formats);
-        self.allocator.free(self.present_modes);
     }
 };
