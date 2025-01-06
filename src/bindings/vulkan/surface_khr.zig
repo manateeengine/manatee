@@ -30,8 +30,8 @@ pub const SurfaceKhr = enum(u32) {
             },
             .windows => {
                 const win32_surface_create_info = Win32SurfaceCreateInfoKhr{
-                    .hwnd = native_window,
-                    .hinstance = native_app,
+                    .hwnd = @ptrCast(native_window),
+                    .hinstance = @ptrCast(native_app),
                 };
 
                 return try createWin32SurfaceKhr(instance, &win32_surface_create_info, null);
@@ -92,8 +92,8 @@ pub const Win32SurfaceCreateInfoKhr = extern struct {
     const win32 = @import("../win32.zig");
     sType: StructureType = StructureType.win32_surface_create_info_khr,
     flags: u32 = 0,
-    hinstance: *anyopaque,
-    hwnd: *anyopaque,
+    hinstance: *win32.wnd_msg.Instance,
+    hwnd: *win32.wnd_msg.Window,
 };
 
 extern fn vkCreateMetalSurfaceEXT(instance: Instance, pCreateInfo: *const MetalSurfaceCreateInfoExt, pAllocator: ?*const AllocationCallbacks, pSurface: *SurfaceKhr) Result;
