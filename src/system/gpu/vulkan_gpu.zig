@@ -235,13 +235,30 @@ const ManateePhysicalDevice = struct {
 /// a given PhysicalDevice
 const ManateeSwapchainSupportDetails = struct {
     const Self = @This();
+    allocator: std.mem.Allocator,
     capabilities: vulkan.SurfaceCapabilitiesKhr,
     formats: []vulkan.SurfaceFormatKhr,
     present_modes: []vulkan.PresentModeKhr,
 
-    pub fn init(physical_device: ManateePhysicalDevice) Self {
-        _ = physical_device;
-        // TODO
-        return Self{};
+    pub fn init(allocator: std.mem.Allocator, physical_device: *vulkan.PhysicalDevice, surface: vulkan.SurfaceKhr) !Self {
+        const capabilities = try physical_device.getSurfaceCapabilitiesKhr(surface);
+
+        const formats = try physical_device.getSurfaceFormats(allocator, surface);
+        errdefer allocator.free(formats);
+
+        const present_modes = try physical_device.getSurfacePresentModes(allocator, surface);
+        errdefer allocator.free(present_modes);
+
+        return Self{
+            .allocator = allocator,
+            .capabilities = capabilities,
+            .formats = formats,
+            .present_modes = present_modes,
+        };
+    }
+
+    pub fn deinit(self: *Self) void {
+        self.allocator.free(self.formats);
+        self.allocator.free(self.present_modes);
     }
 };
