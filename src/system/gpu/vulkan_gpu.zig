@@ -71,8 +71,7 @@ pub const VulkanGpu = struct {
         var best_physical_device_score: u32 = 0;
 
         for (physical_devices) |physical_device| {
-            // TODO: There HAS to be a better way to do this than to const cast???
-            const manatee_physical_device = try ManateePhysicalDevice.init(allocator, @constCast(&physical_device), surface);
+            const manatee_physical_device = try ManateePhysicalDevice.init(allocator, physical_device, surface);
 
             if (manatee_physical_device.score > best_physical_device_score) {
                 best_physical_device = manatee_physical_device;
@@ -165,7 +164,7 @@ const ManateePhysicalDevice = struct {
     queue_family_index_present: u32,
     score: u32,
 
-    pub fn init(allocator: std.mem.Allocator, physical_device: *vulkan.PhysicalDevice, surface: vulkan.SurfaceKhr) !Self {
+    pub fn init(allocator: std.mem.Allocator, physical_device: vulkan.PhysicalDevice, surface: vulkan.SurfaceKhr) !Self {
         const invalid_queue_family_index = std.math.maxInt(u32);
 
         const features = physical_device.getFeatures();
@@ -221,7 +220,7 @@ const ManateePhysicalDevice = struct {
         // TODO: I should probably check device swapchain support here
 
         return Self{
-            .device = physical_device.*,
+            .device = physical_device,
             .features = features,
             .properties = properties,
             .queue_family_index_graphics = queue_family_index_graphics,

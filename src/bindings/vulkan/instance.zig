@@ -37,9 +37,9 @@ pub const Instance = enum(usize) {
     /// Enumerates the physical devices accessible to a Vulkan instance
     /// Original: `vkEnumeratePhysicalDevices`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkEnumeratePhysicalDevices.html
-    pub fn enumeratePhysicalDevices(self: *Self, allocator: std.mem.Allocator) ![]PhysicalDevice {
+    pub fn enumeratePhysicalDevices(self: Self, allocator: std.mem.Allocator) ![]PhysicalDevice {
         var physical_Device_count: u32 = 0;
-        _ = vkEnumeratePhysicalDevices(self.*, &physical_Device_count, null);
+        _ = vkEnumeratePhysicalDevices(self, &physical_Device_count, null);
 
         if (physical_Device_count == 0) {
             return error.no_physical_devices;
@@ -48,7 +48,7 @@ pub const Instance = enum(usize) {
         const physical_devices = try allocator.alloc(PhysicalDevice, physical_Device_count);
         errdefer allocator.free(physical_devices);
 
-        if (vkEnumeratePhysicalDevices(self.*, &physical_Device_count, physical_devices.ptr) != .success) {
+        if (vkEnumeratePhysicalDevices(self, &physical_Device_count, physical_devices.ptr) != .success) {
             return error.device_enumeration_failed;
         }
 
@@ -58,8 +58,8 @@ pub const Instance = enum(usize) {
     /// Destroy an instance of Vulkan
     /// Original: `vkDestroyInstance`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyInstance.html
-    pub fn destroyInstance(self: *Self, allocation_callbacks: ?*AllocationCallbacks) void {
-        vkDestroyInstance(self.*, allocation_callbacks);
+    pub fn destroyInstance(self: Self, allocation_callbacks: ?*AllocationCallbacks) void {
+        vkDestroyInstance(self, allocation_callbacks);
     }
 };
 

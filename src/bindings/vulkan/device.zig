@@ -36,16 +36,16 @@ pub const Device = enum(usize) {
     /// Destroy a logical device
     /// Original: `vkDestroyDevice`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyDevice.html
-    pub fn destroyDevice(self: *Self, allocator_callbacks: ?*const AllocationCallbacks) void {
-        return vkDestroyDevice(self.*, allocator_callbacks);
+    pub fn destroyDevice(self: Self, allocator_callbacks: ?*const AllocationCallbacks) void {
+        return vkDestroyDevice(self, allocator_callbacks);
     }
 
     /// Get a queue handle from a device
     /// Original: `vkGetDeviceQueue`
     /// https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetDeviceQueue.html
-    pub fn getQueue(self: *Self, queue_family_index: u32, queue_index: u32) Queue {
+    pub fn getQueue(self: Self, queue_family_index: u32, queue_index: u32) Queue {
         var queue: Queue = undefined;
-        vkGetDeviceQueue(self.*, queue_family_index, queue_index, &queue);
+        vkGetDeviceQueue(self, queue_family_index, queue_index, &queue);
         return queue;
     }
 };

@@ -14,31 +14,31 @@ pub const PhysicalDevice = enum(usize) {
     /// Reports capabilities of a physical device
     /// Original: `vkGetPhysicalDeviceFeatures`
     /// https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceProperties.html
-    pub fn getFeatures(self: *Self) PhysicalDeviceFeatures {
+    pub fn getFeatures(self: Self) PhysicalDeviceFeatures {
         var physical_device_features: PhysicalDeviceFeatures = undefined;
-        vkGetPhysicalDeviceFeatures(self.*, &physical_device_features);
+        vkGetPhysicalDeviceFeatures(self, &physical_device_features);
         return physical_device_features;
     }
 
     /// Returns properties of a physical device
     /// Original: `vkGetPhysicalDeviceProperties`
     /// https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceProperties.html
-    pub fn getProperties(self: *Self) PhysicalDeviceProperties {
+    pub fn getProperties(self: Self) PhysicalDeviceProperties {
         var physical_device_properties: PhysicalDeviceProperties = undefined;
-        vkGetPhysicalDeviceProperties(self.*, &physical_device_properties);
+        vkGetPhysicalDeviceProperties(self, &physical_device_properties);
         return physical_device_properties;
     }
 
     /// Reports properties of the queues of the specified physical device
     /// Original: `vkGetPhysicalDeviceQueueFamilyProperties`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceQueueFamilyProperties.html
-    pub fn getQueueFamilyProperties(self: *Self, allocator: std.mem.Allocator) ![]QueueFamilyProperties {
+    pub fn getQueueFamilyProperties(self: Self, allocator: std.mem.Allocator) ![]QueueFamilyProperties {
         var physical_device_queue_family_property_count: u32 = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(self.*, &physical_device_queue_family_property_count, null);
+        vkGetPhysicalDeviceQueueFamilyProperties(self, &physical_device_queue_family_property_count, null);
 
         const physical_device_queue_family_properties = try allocator.alloc(QueueFamilyProperties, physical_device_queue_family_property_count);
         errdefer allocator.free(physical_device_queue_family_properties);
-        vkGetPhysicalDeviceQueueFamilyProperties(self.*, &physical_device_queue_family_property_count, physical_device_queue_family_properties.ptr);
+        vkGetPhysicalDeviceQueueFamilyProperties(self, &physical_device_queue_family_property_count, physical_device_queue_family_properties.ptr);
 
         return physical_device_queue_family_properties;
     }
@@ -46,9 +46,9 @@ pub const PhysicalDevice = enum(usize) {
     /// Query surface capabilities
     /// Original: `vkGetSurfaceCapabilitiesKHR`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceCapabilitiesKHR.html
-    pub fn getSurfaceCapabilitiesKhr(self: *Self, surface: SurfaceKhr) !SurfaceCapabilitiesKhr {
+    pub fn getSurfaceCapabilitiesKhr(self: Self, surface: SurfaceKhr) !SurfaceCapabilitiesKhr {
         var surface_capabilities_khr: SurfaceCapabilitiesKhr = undefined;
-        if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(self.*, surface, &surface_capabilities_khr) != .suboptimal_khr) {
+        if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(self, surface, &surface_capabilities_khr) != .suboptimal_khr) {
             return error.unable_to_determine_surface_capabilities;
         }
         return surface_capabilities_khr;
@@ -57,9 +57,9 @@ pub const PhysicalDevice = enum(usize) {
     /// Query if presentation is supported
     /// Original: `vkGetPhysicalDeviceSurfaceSupportKHR`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceSupportKHR.html
-    pub fn getSurfaceSupportKhr(self: *Self, queue_family_index: u32, surface: SurfaceKhr) !bool {
+    pub fn getSurfaceSupportKhr(self: Self, queue_family_index: u32, surface: SurfaceKhr) !bool {
         var is_supported: bool = undefined;
-        if (vkGetPhysicalDeviceSurfaceSupportKHR(self.*, queue_family_index, surface, &is_supported) != .success) {
+        if (vkGetPhysicalDeviceSurfaceSupportKHR(self, queue_family_index, surface, &is_supported) != .success) {
             return error.unable_to_determine_surface_support;
         }
         return is_supported;

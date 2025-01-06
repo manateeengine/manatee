@@ -70,8 +70,8 @@ pub const SurfaceKhr = enum(u32) {
     /// Destroy a VkSurfaceKHR object
     /// Original: `vkDestroySurfaceKHR`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroySurfaceKHR.html
-    pub fn destroySurface(self: *Self, instance: Instance, allocation_callbacks: ?*const AllocationCallbacks) void {
-        return vkDestroySurfaceKHR(instance, self.*, allocation_callbacks);
+    pub fn destroySurface(self: Self, instance: Instance, allocation_callbacks: ?*const AllocationCallbacks) void {
+        return vkDestroySurfaceKHR(instance, self, allocation_callbacks);
     }
 };
 
