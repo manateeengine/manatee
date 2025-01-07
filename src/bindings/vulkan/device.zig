@@ -27,9 +27,7 @@ pub const Device = opaque {
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateDevice.html
     pub fn createDevice(physical: *PhysicalDevice, device_create_info: *const DeviceCreateInfo, allocator_callbacks: ?*const AllocationCallbacks) !*Self {
         var device: *Self = undefined;
-        if (vkCreateDevice(physical, device_create_info, allocator_callbacks, &device) != .success) {
-            return error.device_creation_failed;
-        }
+        try vkCreateDevice(physical, device_create_info, allocator_callbacks, &device).check();
         return device;
     }
 

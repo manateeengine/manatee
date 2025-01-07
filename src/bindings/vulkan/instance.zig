@@ -39,7 +39,7 @@ pub const Instance = opaque {
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkEnumeratePhysicalDevices.html
     pub fn enumeratePhysicalDevices(self: *Self, allocator: std.mem.Allocator) ![]*PhysicalDevice {
         var physical_Device_count: u32 = 0;
-        _ = vkEnumeratePhysicalDevices(self, &physical_Device_count, null);
+        try vkEnumeratePhysicalDevices(self, &physical_Device_count, null).check();
 
         if (physical_Device_count == 0) {
             return error.no_physical_devices;
@@ -48,9 +48,7 @@ pub const Instance = opaque {
         const physical_devices = try allocator.alloc(*PhysicalDevice, physical_Device_count);
         errdefer allocator.free(physical_devices);
 
-        if (vkEnumeratePhysicalDevices(self, &physical_Device_count, physical_devices.ptr) != .success) {
-            return error.device_enumeration_failed;
-        }
+        try vkEnumeratePhysicalDevices(self, &physical_Device_count, physical_devices.ptr).check();
 
         return physical_devices;
     }

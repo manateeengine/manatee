@@ -48,9 +48,7 @@ pub const PhysicalDevice = opaque {
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceCapabilitiesKHR.html
     pub fn getSurfaceCapabilitiesKhr(self: *Self, surface: *SurfaceKhr) !SurfaceCapabilitiesKhr {
         var surface_capabilities_khr: SurfaceCapabilitiesKhr = undefined;
-        if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(self, surface, &surface_capabilities_khr) != .success) {
-            return error.unable_to_determine_surface_capabilities;
-        }
+        try vkGetPhysicalDeviceSurfaceCapabilitiesKHR(self, surface, &surface_capabilities_khr).check();
         return surface_capabilities_khr;
     }
 
@@ -59,16 +57,10 @@ pub const PhysicalDevice = opaque {
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceFormatsKHR.html
     pub fn getSurfaceFormatsKhr(self: *Self, allocator: std.mem.Allocator, surface: *SurfaceKhr) ![]SurfaceFormatKhr {
         var surface_formats_count: u32 = 0;
-        _ = vkGetPhysicalDeviceSurfaceFormatsKHR(self, surface, &surface_formats_count, null);
-
-        // if (surface_formats_count == 0) {
-        //     return &[0]SurfaceFormatKhr{};
-        // }
+        try vkGetPhysicalDeviceSurfaceFormatsKHR(self, surface, &surface_formats_count, null).check();
 
         const surface_formats = try allocator.alloc(SurfaceFormatKhr, surface_formats_count);
-        if (vkGetPhysicalDeviceSurfaceFormatsKHR(self, surface, &surface_formats_count, surface_formats.ptr) != .success) {
-            return error.unable_to_get_surface_formats;
-        }
+        try vkGetPhysicalDeviceSurfaceFormatsKHR(self, surface, &surface_formats_count, surface_formats.ptr).check();
 
         return surface_formats;
     }
@@ -78,16 +70,10 @@ pub const PhysicalDevice = opaque {
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfacePresentModesKHR.html
     pub fn getSurfacePresentModesKhr(self: *Self, allocator: std.mem.Allocator, surface: *SurfaceKhr) ![]PresentModeKhr {
         var surface_present_modes_count: u32 = 0;
-        _ = vkGetPhysicalDeviceSurfacePresentModesKHR(self, surface, &surface_present_modes_count, null);
-
-        // if (surface_present_modes_count == 0) {
-        //     return &[0]PresentModeKhr{};
-        // }
+        try vkGetPhysicalDeviceSurfacePresentModesKHR(self, surface, &surface_present_modes_count, null).check();
 
         const surface_present_modes = try allocator.alloc(PresentModeKhr, surface_present_modes_count);
-        if (vkGetPhysicalDeviceSurfacePresentModesKHR(self, surface, &surface_present_modes_count, surface_present_modes.ptr) != .success) {
-            return error.unable_to_get_surface_present_modes;
-        }
+        try vkGetPhysicalDeviceSurfacePresentModesKHR(self, surface, &surface_present_modes_count, surface_present_modes.ptr).check();
 
         return surface_present_modes;
     }
@@ -97,9 +83,7 @@ pub const PhysicalDevice = opaque {
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetPhysicalDeviceSurfaceSupportKHR.html
     pub fn getSurfaceSupportKhr(self: *Self, queue_family_index: u32, surface: *SurfaceKhr) !bool {
         var is_supported: bool = undefined;
-        if (vkGetPhysicalDeviceSurfaceSupportKHR(self, queue_family_index, surface, &is_supported) != .success) {
-            return error.unable_to_determine_surface_support;
-        }
+        try vkGetPhysicalDeviceSurfaceSupportKHR(self, queue_family_index, surface, &is_supported).check();
         return is_supported;
     }
 };

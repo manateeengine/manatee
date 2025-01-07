@@ -31,9 +31,7 @@ pub const SwapchainKhr = opaque {
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateSwapchainKHR.html
     pub fn createSwapchain(device: *Device, create_info: *const SwapchainCreateInfoKhr, allocation_callbacks: ?*const AllocationCallbacks) !*Self {
         var swapchain: *Self = undefined;
-        if (vkCreateSwapchainKHR(device, create_info, allocation_callbacks, &swapchain) != .success) {
-            return error.unable_to_create_swapchain;
-        }
+        try vkCreateSwapchainKHR(device, create_info, allocation_callbacks, &swapchain).check();
         return swapchain;
     }
 

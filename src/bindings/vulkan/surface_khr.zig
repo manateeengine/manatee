@@ -50,9 +50,7 @@ pub const SurfaceKhr = opaque {
     /// https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateMetalSurfaceEXT.html
     pub fn createMetalSurfaceExt(instance: *Instance, create_info: *const MetalSurfaceCreateInfoExt, allocation_callbacks: ?*const AllocationCallbacks) !*Self {
         var surface: *Self = undefined;
-        if (vkCreateMetalSurfaceEXT(instance, create_info, allocation_callbacks, &surface) != .success) {
-            return error.metal_surface_creation_failed;
-        }
+        try vkCreateMetalSurfaceEXT(instance, create_info, allocation_callbacks, &surface).check();
         return surface;
     }
 
@@ -61,9 +59,7 @@ pub const SurfaceKhr = opaque {
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateWin32SurfaceKHR.html
     pub fn createWin32SurfaceKhr(instance: *Instance, create_info: *const Win32SurfaceCreateInfoKhr, allocation_callbacks: ?*const AllocationCallbacks) !*Self {
         var surface: *Self = undefined;
-        if (vkCreateWin32SurfaceKHR(instance, create_info, allocation_callbacks, &surface) != .success) {
-            return error.metal_surface_creation_failed;
-        }
+        try vkCreateWin32SurfaceKHR(instance, create_info, allocation_callbacks, &surface).check();
         return surface;
     }
 
