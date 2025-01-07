@@ -1,6 +1,7 @@
 pub const allocation_callbacks = @import("vulkan/allocation_callbacks.zig");
 pub const device = @import("vulkan/device.zig");
 pub const format = @import("vulkan/format.zig");
+pub const image_view = @import("vulkan/image_view.zig");
 pub const instance = @import("vulkan/instance.zig");
 pub const physical_device = @import("vulkan/physical_device.zig");
 pub const result = @import("vulkan/result.zig");
@@ -16,6 +17,9 @@ pub const DeviceQueueCreateInfo = device.DeviceQueueCreateInfo;
 pub const Queue = device.Queue;
 
 pub const Format = format.Format;
+
+pub const ImageView = image_view.ImageView;
+pub const ImageViewCreateInfo = image_view.ImageViewCreateInfo;
 
 pub const ApplicationInfo = instance.ApplicationInfo;
 pub const Instance = instance.Instance;

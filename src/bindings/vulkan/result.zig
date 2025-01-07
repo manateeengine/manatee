@@ -2,6 +2,7 @@
 /// Original: `VkResult`
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkResult.html
 pub const Result = enum(i32) {
+    const Self = @This();
     success = 0,
     not_ready = 1,
     timeout = 2,
@@ -52,4 +53,60 @@ pub const Result = enum(i32) {
     pipeline_binary_missing_khr = 1000483000,
     error_not_enough_space_khr = -1000483000,
     result_max_enum = 0x7fffffff,
+    /// A utility function that takes a Vulkan Results and returns void if the result is `success` and
+    /// returns a Zig error correlating with a non-success Vulkan result
+    pub fn check(result: Self) !void {
+        return switch (result) {
+            .success => {},
+            .not_ready => error.not_ready,
+            .timeout => error.timeout,
+            .event_set => error.event_set,
+            .event_reset => error.event_reset,
+            .incomplete => error.incomplete,
+            .error_out_of_host_memory => error.out_of_host_memory,
+            .error_out_of_device_memory => error.out_of_device_memory,
+            .error_initialization_failed => error.initialization_failed,
+            .error_device_lost => error.device_lost,
+            .error_memory_map_failed => error.memory_map_failed,
+            .error_layer_not_present => error.layer_not_present,
+            .error_extension_not_present => error.extension_not_present,
+            .error_feature_not_present => error.feature_not_present,
+            .error_incompatible_driver => error.incompatible_driver,
+            .error_too_many_objects => error.too_many_objects,
+            .error_format_not_supported => error.format_not_supported,
+            .error_fragmented_pool => error.fragmented_pool,
+            .error_unknown => error.unknown,
+            .error_out_of_pool_memory => error.out_of_pool_memory,
+            .error_invalid_external_handle => error.invalid_external_handle,
+            .error_fragmentation => error.fragmentation,
+            .error_invalid_opaque_capture_address => error.invalid_opaque_capture_address,
+            .pipeline_compile_required => error.pipeline_compile_required,
+            .error_surface_lost_khr => error.surface_lost_khr,
+            .error_native_window_in_use_khr => error.native_window_in_use_khr,
+            .suboptimal_khr => error.suboptimal_khr,
+            .error_out_of_date_khr => error.out_of_date_khr,
+            .error_incompatible_display_khr => error.incompatible_display_khr,
+            .error_validation_failed_ext => error.validation_failed_ext,
+            .error_invalid_shader_nv => error.invalid_shader_nv,
+            .error_image_usage_not_supported_khr => error.image_usage_not_supported_khr,
+            .error_video_picture_layout_not_supported_khr => error.video_picture_layout_not_supported_khr,
+            .error_video_profile_operation_not_supported_khr => error.video_profile_operation_not_supported_khr,
+            .error_video_profile_format_not_supported_khr => error.video_profile_format_not_supported_khr,
+            .error_video_profile_codec_not_supported_khr => error.video_profile_codec_not_supported_khr,
+            .error_video_std_version_not_supported_khr => error.video_std_version_not_supported_khr,
+            .error_invalid_drm_format_modifier_plane_layout_ext => error.invalid_drm_format_modifier_plane_layout_ext,
+            .error_not_permitted_khr => error.not_permitted_khr,
+            .error_full_screen_exclusive_mode_lost_ext => error.full_screen_exclusive_mode_lost_ext,
+            .thread_idle_khr => error.thread_idle_khr,
+            .thread_done_khr => error.thread_done_khr,
+            .operation_deferred_khr => error.operation_deferred_khr,
+            .operation_not_deferred_khr => error.operation_not_deferred_khr,
+            .error_invalid_video_std_parameters_khr => error.invalid_video_std_parameters_khr,
+            .error_compression_exhausted_ext => error.compression_exhausted_ext,
+            .incompatible_shader_binary_ext => error.incompatible_shader_binary_ext,
+            .pipeline_binary_missing_khr => error.pipeline_binary_missing_khr,
+            .error_not_enough_space_khr => error.not_enough_space_khr,
+            else => error.unknown_vulkan_response,
+        };
+    }
 };

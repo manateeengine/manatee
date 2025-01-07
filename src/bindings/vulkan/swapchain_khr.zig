@@ -1,8 +1,11 @@
+const std = @import("std");
+
 const physical_device = @import("physical_device.zig");
 
 const AllocationCallbacks = @import("allocation_callbacks.zig").AllocationCallbacks;
 const Device = @import("device.zig").Device;
 const Format = @import("format.zig").Format;
+const Image = @import("image.zig").Image;
 const Result = @import("result.zig").Result;
 const StructureType = @import("structure_type.zig").StructureType;
 const SurfaceKhr = @import("surface_khr.zig").SurfaceKhr;
@@ -40,6 +43,20 @@ pub const SwapchainKhr = opaque {
     pub fn destroySwapchain(self: *Self, device: *Device, allocation_callbacks: ?*const AllocationCallbacks) void {
         return vkDestroySwapchainKHR(device, self, allocation_callbacks);
     }
+
+    /// Obtain the array of presentable images associated with a swapchain
+    /// Original: `vkGetSwapchainImagesKHR`
+    /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetSwapchainImagesKHR.html
+    pub fn getImagesKhr(self: *Self, allocator: std.mem.Allocator, device: *Device) ![]*Image {
+        var images_count: u32 = 0;
+        _ = vkGetSwapchainImagesKHR(device, self, &images_count, null);
+
+        const images = try allocator.alloc(*Image, images_count);
+        errdefer allocator.free(images);
+        try vkGetSwapchainImagesKHR(device, self, &images_count, images.ptr).check();
+
+        return images;
+    }
 };
 
 /// Buffer and image sharing modes
@@ -76,3 +93,4 @@ pub const SwapchainCreateInfoKhr = extern struct {
 
 extern fn vkCreateSwapchainKHR(device: *Device, pCreateInfo: *const SwapchainCreateInfoKhr, pAllocator: ?*const AllocationCallbacks, pSwapchain: **SwapchainKhr) Result;
 extern fn vkDestroySwapchainKHR(device: *Device, swapchain: *SwapchainKhr, pAllocator: ?*const AllocationCallbacks) void;
+extern fn vkGetSwapchainImagesKHR(device: *Device, swapchain: *SwapchainKhr, pSwapchainImageCount: *u32, ?[*]*Image) Result;

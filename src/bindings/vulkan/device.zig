@@ -60,28 +60,28 @@ pub const Queue = opaque {};
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkDeviceCreateInfo.html
 pub const DeviceCreateInfo = extern struct {
     /// A `StructureType` value identifying this structure.
-    s_type: StructureType = StructureType.device_create_info,
+    type: StructureType = StructureType.device_create_info,
     /// An optional pointer to a structure extending this structure.
-    p_next: ?*const anyopaque = null,
+    next: ?*const anyopaque = null,
     /// Reserved for future use.
     flags: u32 = 0,
     /// The unsigned integer size of the p_queue_create_infos array.
     queue_create_info_count: i32,
     /// A pointer to an array of DeviceQueueCreateInfo structures describing the queues that are
     /// requested to be created along with the logical device.
-    p_queue_create_infos: ?[*]const DeviceQueueCreateInfo,
+    queue_create_infos: ?[*]const DeviceQueueCreateInfo,
     /// DEPRECATED: `enabled_layer_count` is deprecated and ignored.
     enabled_layer_count: u32 = 0,
     /// DEPRECATED: `pp_enabled_layer_names` is deprecated and ignored
-    pp_enabled_layer_names: ?[*]const [*:0]const u8 = null,
+    enabled_layer_names: ?[*]const [*:0]const u8 = null,
     /// The number of device extensions to enable.
     enabled_extension_count: u32 = 0,
     /// An optional pointer to an array of enabledExtensionCount null-terminated UTF-8 strings
     /// containing the names of extensions to enable for the created device.
-    pp_enabled_extension_names: ?[*]const [*:0]const u8 = null,
+    enabled_extension_names: ?[*]const [*:0]const u8 = null,
     /// An optional pointer to a PhysicalDeviceFeatures structure containing boolean indicators of
     /// all the features to be enabled.
-    p_enabled_features: ?*PhysicalDeviceFeatures,
+    enabled_features: ?*PhysicalDeviceFeatures,
 };
 
 /// Structure specifying parameters of a newly created device queue
@@ -89,9 +89,9 @@ pub const DeviceCreateInfo = extern struct {
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkDeviceQueueCreateInfo.html
 pub const DeviceQueueCreateInfo = extern struct {
     /// A `StructureType` value identifying this structure.
-    s_type: StructureType = StructureType.device_queue_create_info,
+    type: StructureType = StructureType.device_queue_create_info,
     /// An optional pointer to a structure extending this structure.
-    p_next: ?*const anyopaque = null,
+    next: ?*const anyopaque = null,
     /// A bitmask indicating behavior of the queues.
     flags: u32 = 0,
     /// An unsigned integer indicating the index of the queue family in which to create the queues
@@ -104,7 +104,7 @@ pub const DeviceQueueCreateInfo = extern struct {
     queue_count: u32,
     /// A pointer to an array of queueCount normalized floating-point values, specifying priorities
     /// of work that will be submitted to each created queue.
-    p_queue_priorities: [*]const f32,
+    queue_priorities: [*]const f32,
 };
 
 extern fn vkCreateDevice(physicalDevice: *PhysicalDevice, *const DeviceCreateInfo, pAllocator: ?*const AllocationCallbacks, pDevice: **Device) Result;

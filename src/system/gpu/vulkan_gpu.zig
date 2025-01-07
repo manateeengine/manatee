@@ -18,12 +18,16 @@ const Window = @import("../window.zig").Window;
 /// have that luxury, so we had to effectively rewrite that wrapper inside of this struct's `init`
 /// method.
 ///
+/// Most of this will probably need to be re-organized / abstracted in some way or another as I get
+/// more comfortable with Vulkan, but that's okay, we're still a LONG way out from v0 anyway!
+///
 /// A good portion of this implementation was inspired by spanzeri's `vkguide-zig` repo. I'd like
 /// to give a huge shout-out to his work as it dramatically helped with my own understanding of how
 /// Vulkan (and other external dynamic libraries) can be used within Zig.
 pub const VulkanGpu = struct {
     allocator: std.mem.Allocator,
     device: *vulkan.Device,
+    image_views: []*vulkan.ImageView,
     instance: *vulkan.Instance,
     queue_graphics: *vulkan.Queue,
     queue_present: *vulkan.Queue,
@@ -34,9 +38,9 @@ pub const VulkanGpu = struct {
         // Create Instance
         const app_info = vulkan.ApplicationInfo{
             .api_version = vulkan.api_version_1_0,
-            .p_application_name = "Manatee Game",
+            .application_name = "Manatee Game",
             .application_version = vulkan.makeApiVersion(0, 0, 1, 0),
-            .p_engine_name = "Manatee",
+            .engine_name = "Manatee",
             .engine_version = vulkan.makeApiVersion(0, 0, 1, 0),
         };
         const instance_extensions: []const [*:0]const u8 = switch (builtin.target.os.tag) {
@@ -53,8 +57,8 @@ pub const VulkanGpu = struct {
         };
         const instance_create_info = vulkan.InstanceCreateInfo{
             .enabled_layer_count = 0,
-            .p_application_info = &app_info,
-            .pp_extension_names = instance_extensions.ptr,
+            .application_info = &app_info,
+            .extension_names = instance_extensions.ptr,
             .enabled_extension_count = @intCast(instance_extensions.len),
             // TODO: Figure out if this only ever needs to be loaded on MacOS?
             .flags = vulkan.InstanceCreateFlags{ .enumerate_portability_bit_khr = true },
@@ -94,12 +98,12 @@ pub const VulkanGpu = struct {
             vulkan.DeviceQueueCreateInfo{
                 .queue_count = 1,
                 .queue_family_index = physical_device.queue_family_index_graphics,
-                .p_queue_priorities = &queue_priorities,
+                .queue_priorities = &queue_priorities,
             },
             vulkan.DeviceQueueCreateInfo{
                 .queue_count = 1,
                 .queue_family_index = physical_device.queue_family_index_present,
-                .p_queue_priorities = &queue_priorities,
+                .queue_priorities = &queue_priorities,
             },
         };
 
@@ -116,9 +120,9 @@ pub const VulkanGpu = struct {
 
         const device_create_info = vulkan.DeviceCreateInfo{
             .queue_create_info_count = if (is_queue_shared) 1 else 2,
-            .p_queue_create_infos = &queue_create_infos,
-            .p_enabled_features = &best_physical_device.?.features,
-            .pp_enabled_extension_names = device_extensions.ptr,
+            .queue_create_infos = &queue_create_infos,
+            .enabled_features = &best_physical_device.?.features,
+            .enabled_extension_names = device_extensions.ptr,
             .enabled_extension_count = @intCast(device_extensions.len),
         };
         var device = try vulkan.Device.init(physical_device.device, &device_create_info);
@@ -147,9 +151,40 @@ pub const VulkanGpu = struct {
         };
         const swapchain = try vulkan.SwapchainKhr.init(device, &swapchain_create_info);
 
+        // Get Swapchain Images
+        const images = try swapchain.getImagesKhr(allocator, device);
+        defer allocator.free(images);
+        const swapchain_extent = physical_device.surface_extent;
+        _ = swapchain_extent; // autofix
+
+        const image_views = try allocator.alloc(*vulkan.ImageView, images.len);
+
+        for (images, image_views) |image, *image_view| {
+            const image_view_create_info = vulkan.ImageViewCreateInfo{
+                .image = image,
+                .view_type = .@"2d",
+                .format = physical_device.surface_format.?.format,
+                .components = .{
+                    .r = .identity,
+                    .g = .identity,
+                    .b = .identity,
+                    .a = .identity,
+                },
+                .subresource_range = .{
+                    .aspect_mask = .{ .color_bit_enabled = true },
+                    .base_mip_level = 0,
+                    .level_count = 1,
+                    .base_array_layer = 0,
+                    .layer_count = 1,
+                },
+            };
+            image_view.* = try vulkan.ImageView.init(device, &image_view_create_info);
+        }
+
         return VulkanGpu{
             .allocator = allocator,
             .device = device,
+            .image_views = image_views,
             .instance = instance,
             .queue_graphics = queue_graphics,
             .queue_present = queue_present,
@@ -171,6 +206,9 @@ pub const VulkanGpu = struct {
 
     fn deinit(ctx: *anyopaque) void {
         const self: *VulkanGpu = @ptrCast(@alignCast(ctx));
+        for (self.image_views) |image_view| {
+            image_view.deinit(self.device);
+        }
         self.swapchain.deinit(self.device);
         self.device.deinit();
         self.surface.deinit(self.instance);
@@ -181,6 +219,9 @@ pub const VulkanGpu = struct {
 
 /// A Manatee-specific struct that contains a Vulkan Physical Device handle, as well as its
 /// features, properties, relevant queue indices, and a score used for picking the best device
+///
+/// TODO: A good chunk of this should probably be abstracted into something that's not this struct,
+/// but I'll get to do that in a post-tutorial world
 const ManateePhysicalDevice = struct {
     const Self = @This();
     device: *vulkan.PhysicalDevice,

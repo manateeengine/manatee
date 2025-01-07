@@ -72,18 +72,18 @@ pub const api_version_1_0 = makeApiVersion(0, 1, 0, 0);
 /// https://registry.khronos.org/vulkan/specs/latest/man/html/VkApplicationInfo.html
 pub const ApplicationInfo = extern struct {
     /// A `StructureType` value identifying this structure.
-    s_type: StructureType = .application_info,
+    type: StructureType = .application_info,
     /// An optional pointer to a structure extending this structure.
-    p_next: ?*const anyopaque = null,
+    next: ?*const anyopaque = null,
     /// An optional pointer to a null-terminated UTF-8 string containing the name of the
     /// application.
-    p_application_name: ?[*:0]const u8 = null,
+    application_name: ?[*:0]const u8 = null,
     /// An unsigned integer variable containing the developer-supplied version number of the
     /// application.
     application_version: u32,
     /// An optional pointer to a null-terminated UTF-8 string containing the name of the engine (if
     /// any) used to create the application.
-    p_engine_name: ?[*:0]const u8 = null,
+    engine_name: ?[*:0]const u8 = null,
     /// An unsigned integer variable containing the developer-supplied version number of the engine
     /// used to create the application.
     engine_version: u32,
@@ -99,14 +99,14 @@ pub const ApplicationInfo = extern struct {
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkInstanceCreateInfo.html
 pub const InstanceCreateInfo = extern struct {
     /// A StructureType value identifying this structure.
-    s_type: StructureType = .instance_create_info,
+    type: StructureType = .instance_create_info,
     /// An optional pointer to a structure extending this structure.
-    p_next: ?*const anyopaque = null,
+    next: ?*const anyopaque = null,
     /// A bitmask of VkInstanceCreateFlagBits indicating the behavior of the instance.
     flags: InstanceCreateFlags = .{},
     /// An optional pointer to a VkApplicationInfo structure. If not NULL, this information helps
     /// implementations recognize behavior inherent to classes of applications.
-    p_application_info: ?*const ApplicationInfo = null,
+    application_info: ?*const ApplicationInfo = null,
     /// The number of global layers to enable.
     enabled_layer_count: u32,
     /// An optional pointer to an array of enabledLayerCount null-terminated UTF-8 strings
@@ -115,12 +115,12 @@ pub const InstanceCreateInfo = extern struct {
     /// to the application, and the last array element being the closest to the driver. See the
     /// https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#extendingvulkan-layers
     /// section for further details.
-    pp_enabled_layer_names: ?[*]const ?[*:0]const u8 = null,
+    enabled_layer_names: ?[*]const ?[*:0]const u8 = null,
     /// The number of global extensions to enable.
     enabled_extension_count: u32 = 0,
     /// An optional pointer to an array of enabledExtensionCount null-terminated UTF-8 strings
     ///containing the names of extensions to enable.
-    pp_extension_names: ?[*]const ?[*:0]const u8 = null,
+    extension_names: ?[*]const ?[*:0]const u8 = null,
 };
 
 /// Bitmask of VkInstanceCreateFlagBits

@@ -23,7 +23,7 @@ pub const SurfaceKhr = opaque {
                 const window_view: *apple.app_kit.View = @ptrCast(window_instance.getContentView());
 
                 const metal_surface_create_info = MetalSurfaceCreateInfoExt{
-                    .p_layer = window_view.getLayer(),
+                    .layer = window_view.getLayer(),
                 };
 
                 return try createMetalSurfaceExt(instance, &metal_surface_create_info, null);
@@ -79,10 +79,10 @@ pub const SurfaceKhr = opaque {
 /// Original: `VkMetalSurfaceCreateInfoEXT`
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkMetalSurfaceCreateInfoEXT.html
 pub const MetalSurfaceCreateInfoExt = extern struct {
-    s_type: StructureType = StructureType.metal_surface_create_info_ext,
-    p_next: ?*const anyopaque = null,
+    type: StructureType = StructureType.metal_surface_create_info_ext,
+    next: ?*const anyopaque = null,
     flags: u32 = 0,
-    p_layer: *const anyopaque,
+    layer: *const anyopaque,
 };
 
 /// Structure specifying parameters of a newly created Win32 surface object
