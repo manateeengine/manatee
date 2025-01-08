@@ -181,6 +181,26 @@ pub const VulkanGpu = struct {
             image_view.* = try vulkan.ImageView.init(device, &image_view_create_info);
         }
 
+        // Load Shaders
+        // TODO: OBVIOUSLY all of this will get pulled out of here, but that'll probably be in a
+        // post-ECS world since this giant ass branch is just for creating a single triangle
+
+        const frag_shader_raw align(@alignOf(u32)) = @embedFile("shader.frag").*;
+        const frag_shader_create_info = vulkan.ShaderModuleCreateInfo{
+            .code_size = frag_shader_raw.len,
+            .code = @ptrCast(&frag_shader_raw),
+        };
+        const frag_shader = try vulkan.ShaderModule.init(device, &frag_shader_create_info);
+        defer frag_shader.deinit(device);
+
+        const vert_shader_raw align(@alignOf(u32)) = @embedFile("shader.vert").*;
+        const vert_shader_create_info = vulkan.ShaderModuleCreateInfo{
+            .code_size = vert_shader_raw.len,
+            .code = @ptrCast(&vert_shader_raw),
+        };
+        const vert_shader = try vulkan.ShaderModule.init(device, &vert_shader_create_info);
+        defer vert_shader.deinit(device);
+
         return VulkanGpu{
             .allocator = allocator,
             .device = device,

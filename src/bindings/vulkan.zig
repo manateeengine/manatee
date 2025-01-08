@@ -5,6 +5,7 @@ pub const image_view = @import("vulkan/image_view.zig");
 pub const instance = @import("vulkan/instance.zig");
 pub const physical_device = @import("vulkan/physical_device.zig");
 pub const result = @import("vulkan/result.zig");
+pub const shader_module = @import("vulkan/shader_module.zig");
 pub const surface_khr = @import("vulkan/surface_khr.zig");
 pub const structure_type = @import("vulkan/structure_type.zig");
 pub const swapchain_khr = @import("vulkan/swapchain_khr.zig");
@@ -41,6 +42,9 @@ pub const SurfaceCapabilitiesKhr = physical_device.SurfaceCapabilitiesKhr;
 pub const SurfaceFormatKhr = physical_device.SurfaceFormatKhr;
 
 pub const Result = result.Result;
+
+pub const ShaderModule = shader_module.ShaderModule;
+pub const ShaderModuleCreateInfo = shader_module.ShaderModuleCreateInfo;
 
 pub const SurfaceKhr = surface_khr.SurfaceKhr;
 

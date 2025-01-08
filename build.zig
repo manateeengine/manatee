@@ -89,6 +89,11 @@ pub fn build(b: *std.Build) !void {
     check.dependOn(&lib_check.step);
     check.dependOn(&exe_check.step);
 
+    // Compile all shaders
+    // TODO: This should be a part of the developer's build step, I should export a build function
+    // from the module to do this
+    try compile_shaders(b, exe);
+
     // Setup Install Step
     b.installArtifact(lib);
     b.installArtifact(exe);
@@ -115,4 +120,65 @@ pub fn build(b: *std.Build) !void {
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&test_cmd.step);
+}
+
+/// Uses Slang to compile all shaders in the project root's "shaders" folder
+///
+/// TODO: Figure out a better shader pipeline and improve this mess, this sucks
+pub fn compile_shaders(b: *std.Build, exe: *std.Build.Step.Compile) !void {
+    var shaders_dir: ?std.fs.Dir = null;
+    shaders_dir = b.build_root.handle.openDir("shaders", .{ .iterate = true }) catch null;
+
+    // If there's no shaders dir, do nothing
+    if (shaders_dir == null) {
+        return;
+    }
+
+    const env_map = try std.process.getEnvMap(b.allocator);
+
+    var shader_file_iterator = shaders_dir.?.iterate();
+    while (try shader_file_iterator.next()) |shader_file| {
+        if (shader_file.kind == .file) {
+            const file_extension = std.fs.path.extension(shader_file.name);
+
+            // Once I learn a little more about shaders, I'd genuinely LOVE for Slang to be the
+            // preferred shader language for Manatee, it seems significantly easier than most
+            if (std.mem.eql(u8, file_extension, ".slang")) {
+                const source_path = try std.fmt.allocPrint(b.allocator, "shaders/{s}", .{shader_file.name});
+                const output_path = try std.fmt.allocPrint(b.allocator, "shaders/{s}.spv", .{shader_file.name});
+
+                if (env_map.get("SLANG_PATH")) |slang_base_path| {
+                    const slang_exe = try std.fmt.allocPrint(b.allocator, "{s}/slangc", .{slang_base_path});
+                    const slang_compiler = b.addSystemCommand(&.{slang_exe});
+                    slang_compiler.addFileArg(b.path(source_path));
+                    slang_compiler.addArgs(&.{ "-profile", "glsl_450", "-target", "spirv", "-o" });
+                    const output_file = slang_compiler.addOutputFileArg(output_path);
+                    exe.root_module.addAnonymousImport(shader_file.name, .{ .root_source_file = output_file });
+                    std.debug.print("Slang Shader Source {s}\n", .{source_path});
+                    std.debug.print("Slang Shader Output {s}\n", .{output_path});
+                } else {
+                    return error.slang_not_found;
+                }
+            }
+
+            if (std.mem.eql(u8, file_extension, ".frag") or std.mem.eql(u8, file_extension, ".vert")) {
+                const source_path = try std.fmt.allocPrint(b.allocator, "shaders/{s}", .{shader_file.name});
+                const output_path = try std.fmt.allocPrint(b.allocator, "shaders/{s}.spv", .{shader_file.name});
+
+                if (env_map.get("VK_SDK_PATH")) |vulkan_sdk_path| {
+                    const glslc_exe = try std.fmt.allocPrint(b.allocator, "{s}/bin/glslc", .{vulkan_sdk_path});
+                    const glsl_compiler = b.addSystemCommand(&.{glslc_exe});
+                    glsl_compiler.addFileArg(b.path(source_path));
+                    glsl_compiler.addArgs(&.{"-o"});
+                    const output_file = glsl_compiler.addOutputFileArg(output_path);
+                    exe.root_module.addAnonymousImport(shader_file.name, .{ .root_source_file = output_file });
+                    std.debug.print("GLSL Shader Source {s}\n", .{source_path});
+                    std.debug.print("GLSL Shader Output {s}\n", .{output_path});
+                } else {
+                    return error.slang_not_found;
+                }
+            }
+            // TODO: This function should support MSL and HLSL
+        }
+    }
 }
