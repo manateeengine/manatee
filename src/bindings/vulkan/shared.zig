@@ -1,6 +1,28 @@
 // TODO: Implement this (if Manatee even needs it?)
 pub const AllocationCallbacks = opaque {};
 
+/// Structure specifying a two-dimensional extent
+/// Original: `VkExtent2D`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkExtent2D.html
+pub const Extent2d = extern struct {
+    /// The width of the extent.
+    width: u32,
+    /// The height of the extent.
+    height: u32,
+};
+
+/// Structure specifying a three-dimensional extent
+/// Original: `VkExtent3D`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkExtent3D.html
+pub const Extent3d = extern struct {
+    /// The width of the extent.
+    width: u32,
+    /// The height of the extent.
+    height: u32,
+    /// The depth of the extent.
+    depth: u32,
+};
+
 /// Available image formats
 /// Original: `VkFormat`
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkFormat.html
@@ -258,6 +280,16 @@ pub const Format = enum(i32) {
     a8_unorm_khr = 1000470001,
 };
 
+/// Structure specifying a two-dimensional offset
+/// Original: `VKOffset2D`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkOffset2D.html
+pub const Offset2d = extern struct {
+    /// The x offset.
+    x: i32,
+    /// The y offset.
+    y: i32,
+};
+
 /// Vulkan command return codes
 /// Original: `VkResult`
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkResult.html
@@ -369,6 +401,61 @@ pub const Result = enum(i32) {
             else => error.unknown_vulkan_response,
         };
     }
+};
+
+/// Bitmask of VkSampleCountFlagBits
+/// Original: `VkSampleCountFlagBits`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkSampleCountFlags.html
+pub const SampleCountFlags = packed struct(u32) {
+    const Self = @This();
+
+    one_bit_enabled: bool = false,
+    two_bit_enabled: bool = false,
+    four_bit_enabled: bool = false,
+    eight_bit_enabled: bool = false,
+    sixteen_bit_enabled: bool = false,
+    thirty_two_bit_enabled: bool = false,
+    sixty_four_bit_enabled: bool = false,
+    _reserved_bit_7: u1 = 0,
+    _reserved_bit_8: u1 = 0,
+    _reserved_bit_9: u1 = 0,
+    _reserved_bit_10: u1 = 0,
+    _reserved_bit_11: u1 = 0,
+    _reserved_bit_12: u1 = 0,
+    _reserved_bit_13: u1 = 0,
+    _reserved_bit_14: u1 = 0,
+    _reserved_bit_15: u1 = 0,
+    _reserved_bit_16: u1 = 0,
+    _reserved_bit_17: u1 = 0,
+    _reserved_bit_18: u1 = 0,
+    _reserved_bit_19: u1 = 0,
+    _reserved_bit_20: u1 = 0,
+    _reserved_bit_21: u1 = 0,
+    _reserved_bit_22: u1 = 0,
+    _reserved_bit_23: u1 = 0,
+    _reserved_bit_24: u1 = 0,
+    _reserved_bit_25: u1 = 0,
+    _reserved_bit_26: u1 = 0,
+    _reserved_bit_27: u1 = 0,
+    _reserved_bit_28: u1 = 0,
+    _reserved_bit_29: u1 = 0,
+    _reserved_bit_30: u1 = 0,
+    _reserved_bit_31: u1 = 0,
+
+    /// Specifies an image with one sample per pixel.
+    pub const one_bit = Self{ .one_bit_enabled = true };
+    /// Specifies an image with 2 samples per pixel.
+    pub const two_bit = Self{ .two_bit_enabled = true };
+    /// Specifies an image with 4 samples per pixel.
+    pub const four_bit = Self{ .four_bit_enabled = true };
+    /// Specifies an image with 8 samples per pixel.
+    pub const eight_bit = Self{ .eight_bit_enabled = true };
+    /// Specifies an image with 16 samples per pixel.
+    pub const sixteen_bit = Self{ .sixteen_bit_enabled = true };
+    /// Specifies an image with 32 samples per pixel.
+    pub const thirty_two_bit = Self{ .thirty_two_bit_enabled = true };
+    /// Specifies an image with 64 samples per pixel.
+    pub const sixty_four_bit = Self{ .sixty_four_bit_enabled = true };
 };
 
 /// Vulkan structure types (pname:sType)

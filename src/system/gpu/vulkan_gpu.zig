@@ -201,6 +201,47 @@ pub const VulkanGpu = struct {
         const vert_shader = try vulkan.ShaderModule.init(device, &vert_shader_create_info);
         defer vert_shader.deinit(device);
 
+        // Create Pipeline
+        const dynamic_states = [_]vulkan.DynamicState{ .viewport, .scissor };
+        const dynamic_state_create_info = vulkan.PipelineDynamicStateCreateInfo{
+            .dynamic_state_count = dynamic_states.len,
+            .dynamic_states = &dynamic_states,
+        };
+        _ = dynamic_state_create_info;
+
+        const viewport_state_create_info = vulkan.PipelineViewportStateCreateInfo{
+            .viewport_count = 1,
+            .scissor_count = 1,
+        };
+        _ = viewport_state_create_info;
+
+        const rasterization_state_create_info = vulkan.PipelineRasterizationStateCreateInfo{
+            .polygon_mode = .fill,
+            .line_width = 1.0,
+            .cull_mode = vulkan.CullModeFlags.back_bit,
+            .front_face = .clockwise,
+        };
+        _ = rasterization_state_create_info;
+
+        const multisample_state_create_info = vulkan.PipelineMultisampleStateCreateInfo{
+            .rasterization_samples = vulkan.SampleCountFlags.one_bit,
+        };
+        _ = multisample_state_create_info;
+
+        const color_blend_attachment_state = [_]vulkan.PipelineColorBlendAttachmentState{};
+
+        const color_blend_state_create_info = vulkan.PipelineColorBlendStateCreateInfo{
+            .attachment_count = 1,
+            .attachments = &color_blend_attachment_state,
+            .blend_constants = &.{ 1.0, 1.0, 1.0, 1.0 },
+        };
+        _ = color_blend_state_create_info;
+
+        const pipeline_layout_create_info = vulkan.PipelineLayoutCreateInfo{};
+
+        const pipeline_layout = try vulkan.PipelineLayout.init(device, &pipeline_layout_create_info);
+        _ = pipeline_layout;
+
         return VulkanGpu{
             .allocator = allocator,
             .device = device,

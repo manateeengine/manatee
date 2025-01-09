@@ -8,6 +8,7 @@ const Image = @import("image.zig").Image;
 const SurfaceKhr = @import("surface_khr.zig").SurfaceKhr;
 
 const AllocationCallbacks = shared.AllocationCallbacks;
+const Extent2d = shared.Extent2d;
 const Format = shared.Format;
 const Result = shared.Result;
 const StructureType = shared.StructureType;
@@ -78,7 +79,7 @@ pub const SwapchainCreateInfoKhr = extern struct {
     min_image_count: u32,
     image_format: Format,
     image_color_space: physical_device.ColorSpaceKhr,
-    image_extent: physical_device.Extent2d,
+    image_extent: Extent2d,
     image_array_layers: u32,
     image_usage: physical_device.ImageUsageFlags = physical_device.ImageUsageFlags{},
     image_sharing_mode: SharingMode,
