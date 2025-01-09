@@ -1,23 +1,16 @@
-pub const allocation_callbacks = @import("vulkan/allocation_callbacks.zig");
 pub const device = @import("vulkan/device.zig");
-pub const format = @import("vulkan/format.zig");
 pub const image_view = @import("vulkan/image_view.zig");
 pub const instance = @import("vulkan/instance.zig");
 pub const physical_device = @import("vulkan/physical_device.zig");
-pub const result = @import("vulkan/result.zig");
 pub const shader_module = @import("vulkan/shader_module.zig");
+pub const shared = @import("vulkan/shared.zig");
 pub const surface_khr = @import("vulkan/surface_khr.zig");
-pub const structure_type = @import("vulkan/structure_type.zig");
 pub const swapchain_khr = @import("vulkan/swapchain_khr.zig");
-
-pub const AllocationCallbacks = allocation_callbacks.AllocationCallbacks;
 
 pub const Device = device.Device;
 pub const DeviceCreateInfo = device.DeviceCreateInfo;
 pub const DeviceQueueCreateInfo = device.DeviceQueueCreateInfo;
 pub const Queue = device.Queue;
-
-pub const Format = format.Format;
 
 pub const ImageView = image_view.ImageView;
 pub const ImageViewCreateInfo = image_view.ImageViewCreateInfo;
@@ -41,14 +34,15 @@ pub const QueueFlagBits = physical_device.QueueFlagBits;
 pub const SurfaceCapabilitiesKhr = physical_device.SurfaceCapabilitiesKhr;
 pub const SurfaceFormatKhr = physical_device.SurfaceFormatKhr;
 
-pub const Result = result.Result;
-
 pub const ShaderModule = shader_module.ShaderModule;
 pub const ShaderModuleCreateInfo = shader_module.ShaderModuleCreateInfo;
 
-pub const SurfaceKhr = surface_khr.SurfaceKhr;
+pub const AllocationCallbacks = shared.AllocationCallbacks;
+pub const Format = shared.Format;
+pub const Result = shared.Result;
+pub const StructureType = shared.StructureType;
 
-pub const StructureType = structure_type.StructureType;
+pub const SurfaceKhr = surface_khr.SurfaceKhr;
 
 pub const SwapchainKhr = swapchain_khr.SwapchainKhr;
 pub const SwapchainCreateInfoKhr = swapchain_khr.SwapchainCreateInfoKhr;

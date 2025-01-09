@@ -1,10 +1,13 @@
 const builtin = @import("builtin");
 const std = @import("std");
 
-const AllocationCallbacks = @import("allocation_callbacks.zig").AllocationCallbacks;
+const shared = @import("shared.zig");
+
 const Instance = @import("instance.zig").Instance;
-const Result = @import("result.zig").Result;
-const StructureType = @import("structure_type.zig").StructureType;
+
+const AllocationCallbacks = shared.AllocationCallbacks;
+const Result = shared.Result;
+const StructureType = shared.StructureType;
 
 /// Opaque handle to a surface object
 /// Original: `VkSurfaceKHR`

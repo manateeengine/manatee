@@ -1,14 +1,16 @@
 const std = @import("std");
 
 const physical_device = @import("physical_device.zig");
+const shared = @import("shared.zig");
 
-const AllocationCallbacks = @import("allocation_callbacks.zig").AllocationCallbacks;
 const Device = @import("device.zig").Device;
-const Format = @import("format.zig").Format;
 const Image = @import("image.zig").Image;
-const Result = @import("result.zig").Result;
-const StructureType = @import("structure_type.zig").StructureType;
 const SurfaceKhr = @import("surface_khr.zig").SurfaceKhr;
+
+const AllocationCallbacks = shared.AllocationCallbacks;
+const Format = shared.Format;
+const Result = shared.Result;
+const StructureType = shared.StructureType;
 
 /// Opaque handle to a swapchain object
 /// Original: `VkSwapchainKHR`

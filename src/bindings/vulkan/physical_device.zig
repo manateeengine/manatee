@@ -1,9 +1,13 @@
 const std = @import("std");
 
-const Format = @import("format.zig").Format;
+const shared = @import("shared.zig");
+
 const Instance = @import("instance.zig").Instance;
-const Result = @import("result.zig").Result;
 const SurfaceKhr = @import("surface_khr.zig").SurfaceKhr;
+
+const Format = shared.Format;
+const Result = shared.Result;
+const StructureType = shared.StructureType;
 
 /// Opaque handle to a physical device object
 /// Original: `VhPhysicalDevice`

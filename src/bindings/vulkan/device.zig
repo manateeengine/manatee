@@ -1,10 +1,11 @@
-const AllocationCallbacks = @import("allocation_callbacks.zig").AllocationCallbacks;
 const physical_device = @import("physical_device.zig");
-const Result = @import("result.zig").Result;
-const StructureType = @import("structure_type.zig").StructureType;
+const shared = @import("shared.zig");
 
 const PhysicalDevice = physical_device.PhysicalDevice;
 const PhysicalDeviceFeatures = physical_device.PhysicalDeviceFeatures;
+const AllocationCallbacks = shared.AllocationCallbacks;
+const Result = shared.Result;
+const StructureType = shared.StructureType;
 
 /// Opaque handle to a device object
 /// Original: `VkDevice`

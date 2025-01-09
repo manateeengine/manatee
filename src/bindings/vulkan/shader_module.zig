@@ -1,7 +1,10 @@
-const AllocationCallbacks = @import("allocation_callbacks.zig").AllocationCallbacks;
+const shared = @import("shared.zig");
+
 const Device = @import("device.zig").Device;
-const Result = @import("result.zig").Result;
-const StructureType = @import("structure_type.zig").StructureType;
+
+const AllocationCallbacks = shared.AllocationCallbacks;
+const Result = shared.Result;
+const StructureType = shared.StructureType;
 
 /// Opaque handle to a shader module object
 /// Original: `VkShaderModule`
