@@ -58,6 +58,7 @@ pub const MacosApp = struct {
         const self: *MacosApp = @ptrCast(@alignCast(ctx));
         try self.native_app.setActivationPolicy(.regular);
         self.native_app.activate();
+        // TODO: Figure out why this closes the app as a whole and deinit doesn't run
         return self.native_app.run();
     }
 };

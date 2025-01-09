@@ -25,6 +25,11 @@ pub const PipelineLayout = opaque {
         return try createPipelineLayout(device, create_info, null);
     }
 
+    /// TODO: Figure out how I want to document manatee-specific deinit functions
+    pub fn deinit(self: *Self, device: *Device) void {
+        return self.destroyPipelineLayout(device, null);
+    }
+
     /// Creates a new pipeline layout object
     /// Original: `vkCreatePipelineLayout`
     /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreatePipelineLayout.html
@@ -32,6 +37,13 @@ pub const PipelineLayout = opaque {
         var pipeline_layout: *Self = undefined;
         try vkCreatePipelineLayout(device, create_info, allocation_callbacks, &pipeline_layout).check();
         return pipeline_layout;
+    }
+
+    /// Destroy a pipeline layout object
+    /// Original: `vkDestroyPipelineLayout`
+    /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyPipelineLayout.html
+    pub fn destroyPipelineLayout(self: *Self, device: *Device, allocation_callbacks: ?*const AllocationCallbacks) void {
+        return vkDestroyPipelineLayout(device, self, allocation_callbacks);
     }
 };
 
@@ -586,3 +598,4 @@ pub const Viewport = extern struct {
 };
 
 extern fn vkCreatePipelineLayout(device: *Device, pCreateInfo: *const PipelineLayoutCreateInfo, pAllocator: ?*const AllocationCallbacks, pPipelineLayout: **PipelineLayout) Result;
+extern fn vkDestroyPipelineLayout(device: *Device, pipelineLayout: *PipelineLayout, pAllocator: ?*const AllocationCallbacks) void;

@@ -29,8 +29,10 @@ pub const VulkanGpu = struct {
     device: *vulkan.Device,
     image_views: []*vulkan.ImageView,
     instance: *vulkan.Instance,
+    pipeline_layout: *vulkan.PipelineLayout,
     queue_graphics: *vulkan.Queue,
     queue_present: *vulkan.Queue,
+    render_pass: *vulkan.RenderPass,
     surface: *vulkan.SurfaceKhr,
     swapchain: *vulkan.SwapchainKhr,
 
@@ -201,7 +203,38 @@ pub const VulkanGpu = struct {
         const vert_shader = try vulkan.ShaderModule.init(device, &vert_shader_create_info);
         defer vert_shader.deinit(device);
 
-        // Create Pipeline
+        // Create Render Pass
+        const color_attachment = vulkan.AttachmentDescription{
+            .format = physical_device.surface_format.?.format,
+            .samples = vulkan.SampleCountFlags.one_bit,
+            .load_op = .clear,
+            .store_op = .store,
+            .stencil_load_op = .dont_care,
+            .stencil_store_op = .dont_care,
+            .initial_layout = .undefined,
+            .final_layout = .present_src_khr,
+        };
+
+        const color_attachment_reference = vulkan.AttachmentReference{
+            .attachment = 0,
+            .layout = .color_attachment_optimal,
+        };
+
+        const subpass = vulkan.SubpassDescription{
+            .pipeline_bind_point = .graphics,
+            .color_attachment_count = 1,
+            .color_attachments = &.{color_attachment_reference},
+        };
+
+        const render_pass_create_info = vulkan.RenderPassCreateInfo{
+            .attachment_count = 1,
+            .attachments = &.{color_attachment},
+            .subpass_count = 1,
+            .subpasses = &.{subpass},
+        };
+        const render_pass = try vulkan.RenderPass.init(device, &render_pass_create_info);
+
+        // Create Pipeline Layout
         const dynamic_states = [_]vulkan.DynamicState{ .viewport, .scissor };
         const dynamic_state_create_info = vulkan.PipelineDynamicStateCreateInfo{
             .dynamic_state_count = dynamic_states.len,
@@ -240,15 +273,16 @@ pub const VulkanGpu = struct {
         const pipeline_layout_create_info = vulkan.PipelineLayoutCreateInfo{};
 
         const pipeline_layout = try vulkan.PipelineLayout.init(device, &pipeline_layout_create_info);
-        _ = pipeline_layout;
 
         return VulkanGpu{
             .allocator = allocator,
             .device = device,
             .image_views = image_views,
             .instance = instance,
+            .pipeline_layout = pipeline_layout,
             .queue_graphics = queue_graphics,
             .queue_present = queue_present,
+            .render_pass = render_pass,
             .surface = surface,
             .swapchain = swapchain,
         };
@@ -267,6 +301,8 @@ pub const VulkanGpu = struct {
 
     fn deinit(ctx: *anyopaque) void {
         const self: *VulkanGpu = @ptrCast(@alignCast(ctx));
+        self.pipeline_layout.deinit(self.device);
+        self.render_pass.deinit(self.device);
         for (self.image_views) |image_view| {
             image_view.deinit(self.device);
         }
@@ -275,6 +311,7 @@ pub const VulkanGpu = struct {
         self.surface.deinit(self.instance);
         self.instance.deinit();
         self.allocator.destroy(self);
+        std.debug.print("Vulkan Cleanup Successful, thanks for playing!\n", .{});
     }
 };
 

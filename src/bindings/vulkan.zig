@@ -3,6 +3,7 @@ pub const image_view = @import("vulkan/image_view.zig");
 pub const instance = @import("vulkan/instance.zig");
 pub const physical_device = @import("vulkan/physical_device.zig");
 pub const pipeline = @import("vulkan/pipeline.zig");
+pub const render_pass = @import("vulkan/render_pass.zig");
 pub const shader_module = @import("vulkan/shader_module.zig");
 pub const shared = @import("vulkan/shared.zig");
 pub const surface_khr = @import("vulkan/surface_khr.zig");
@@ -44,6 +45,12 @@ pub const PipelineLayoutCreateInfo = pipeline.PipelineLayoutCreateInfo;
 pub const PipelineMultisampleStateCreateInfo = pipeline.PipelineMultisampleStateCreateInfo;
 pub const PipelineRasterizationStateCreateInfo = pipeline.PipelineRasterizationStateCreateInfo;
 pub const PipelineViewportStateCreateInfo = pipeline.PipelineViewportStateCreateInfo;
+
+pub const AttachmentDescription = render_pass.AttachmentDescription;
+pub const AttachmentReference = render_pass.AttachmentReference;
+pub const RenderPass = render_pass.RenderPass;
+pub const RenderPassCreateInfo = render_pass.RenderPassCreateInfo;
+pub const SubpassDescription = render_pass.SubpassDescription;
 
 pub const ShaderModule = shader_module.ShaderModule;
 pub const ShaderModuleCreateInfo = shader_module.ShaderModuleCreateInfo;
