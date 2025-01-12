@@ -27,6 +27,7 @@ const Window = @import("../window.zig").Window;
 pub const VulkanGpu = struct {
     allocator: std.mem.Allocator,
     device: *vulkan.Device,
+    graphics_pipeline: *vulkan.Pipeline,
     image_views: []*vulkan.ImageView,
     instance: *vulkan.Instance,
     pipeline_layout: *vulkan.PipelineLayout,
@@ -203,6 +204,19 @@ pub const VulkanGpu = struct {
         const vert_shader = try vulkan.ShaderModule.init(device, &vert_shader_create_info);
         defer vert_shader.deinit(device);
 
+        // Create Shader Stages
+        const frag_shader_stage_create_info = vulkan.PipelineShaderStageCreateInfo{
+            .stage = .{ .fragment_bit_enabled = true },
+            .module = frag_shader,
+            .name = "main",
+        };
+
+        const vert_shader_stage_create_info = vulkan.PipelineShaderStageCreateInfo{
+            .stage = .{ .vertex_bit_enabled = true },
+            .module = vert_shader,
+            .name = "main",
+        };
+
         // Create Render Pass
         const color_attachment = vulkan.AttachmentDescription{
             .format = physical_device.surface_format.?.format,
@@ -240,13 +254,18 @@ pub const VulkanGpu = struct {
             .dynamic_state_count = dynamic_states.len,
             .dynamic_states = &dynamic_states,
         };
-        _ = dynamic_state_create_info;
+
+        const vertex_input_state_create_info = vulkan.PipelineVertexInputStateCreateInfo{};
+
+        const input_assembly_state_create_info = vulkan.PipelineInputAssemblyStateCreateInfo{
+            .topology = .triangle_list,
+            .primitive_restart_enable = false,
+        };
 
         const viewport_state_create_info = vulkan.PipelineViewportStateCreateInfo{
             .viewport_count = 1,
             .scissor_count = 1,
         };
-        _ = viewport_state_create_info;
 
         const rasterization_state_create_info = vulkan.PipelineRasterizationStateCreateInfo{
             .polygon_mode = .fill,
@@ -254,12 +273,10 @@ pub const VulkanGpu = struct {
             .cull_mode = vulkan.CullModeFlags.back_bit,
             .front_face = .clockwise,
         };
-        _ = rasterization_state_create_info;
 
         const multisample_state_create_info = vulkan.PipelineMultisampleStateCreateInfo{
             .rasterization_samples = vulkan.SampleCountFlags.one_bit,
         };
-        _ = multisample_state_create_info;
 
         const color_blend_attachment_state = [_]vulkan.PipelineColorBlendAttachmentState{};
 
@@ -268,15 +285,33 @@ pub const VulkanGpu = struct {
             .attachments = &color_blend_attachment_state,
             .blend_constants = &.{ 1.0, 1.0, 1.0, 1.0 },
         };
-        _ = color_blend_state_create_info;
 
         const pipeline_layout_create_info = vulkan.PipelineLayoutCreateInfo{};
-
         const pipeline_layout = try vulkan.PipelineLayout.init(device, &pipeline_layout_create_info);
+
+        // Create Pipeline
+        const pipeline_create_info = vulkan.GraphicsPipelineCreateInfo{
+            .stage_count = 2,
+            .stages = &.{ vert_shader_stage_create_info, frag_shader_stage_create_info },
+            .vertex_input_state = &vertex_input_state_create_info,
+            .input_assembly_state = &input_assembly_state_create_info,
+            .viewport_state = &viewport_state_create_info,
+            .rasterization_state = &rasterization_state_create_info,
+            .multisample_state = &multisample_state_create_info,
+            .depth_stencil_state = null,
+            .color_blend_state = &color_blend_state_create_info,
+            .dynamic_state = &dynamic_state_create_info,
+            .layout = pipeline_layout,
+            .subpass = 0,
+            .base_pipeline_handle = null,
+            .base_pipeline_index = -1,
+        };
+        const graphics_pipeline = try vulkan.Pipeline.init(allocator, device, null, pipeline_create_info);
 
         return VulkanGpu{
             .allocator = allocator,
             .device = device,
+            .graphics_pipeline = graphics_pipeline,
             .image_views = image_views,
             .instance = instance,
             .pipeline_layout = pipeline_layout,
@@ -301,6 +336,7 @@ pub const VulkanGpu = struct {
 
     fn deinit(ctx: *anyopaque) void {
         const self: *VulkanGpu = @ptrCast(@alignCast(ctx));
+        self.graphics_pipeline.deinit(self.device);
         self.pipeline_layout.deinit(self.device);
         self.render_pass.deinit(self.device);
         for (self.image_views) |image_view| {

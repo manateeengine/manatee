@@ -1,570 +1,274 @@
+const std = @import("std");
+
+const pipeline_layout = @import("pipeline_layout.zig");
 const shared = @import("shared.zig");
 
 const Device = @import("device.zig").Device;
+const RenderPass = @import("render_pass.zig").RenderPass;
+const ShaderModule = @import("shader_module.zig").ShaderModule;
 
+const PipelineColorBlendStateCreateInfo = pipeline_layout.PipelineColorBlendStateCreateInfo;
+const PipelineDynamicStateCreateInfo = pipeline_layout.PipelineDynamicStateCreateInfo;
+const PipelineLayout = pipeline_layout.PipelineLayout;
+const PipelineMultisampleStateCreateInfo = pipeline_layout.PipelineMultisampleStateCreateInfo;
+const PipelineRasterizationStateCreateInfo = pipeline_layout.PipelineRasterizationStateCreateInfo;
+const PipelineViewportStateCreateInfo = pipeline_layout.PipelineViewportStateCreateInfo;
+const ShaderStageFlags = pipeline_layout.ShaderStageFlags;
 const AllocationCallbacks = shared.AllocationCallbacks;
-const Extent2d = shared.Extent2d;
-const Offset2d = shared.Offset2d;
+const Format = shared.Format;
 const Result = shared.Result;
-const SampleCountFlags = shared.SampleCountFlags;
 const StructureType = shared.StructureType;
 
-/// Opaque handle to a descriptor set layout object
-/// Original: `VkDescriptorSetLayout`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkDescriptorSetLayout.html
-pub const DescriptorSetLayout = opaque {};
-
-/// Opaque handle to a pipeline layout object
-/// Original: `VkPipelineLayout`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineLayout.html
-pub const PipelineLayout = opaque {
+/// Opaque handle to a pipeline object
+/// Original: `VkPipeline`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipeline.html
+pub const Pipeline = opaque {
     const Self = @This();
 
     /// TODO: Figure out how I want to document manatee-specific init functions
-    pub fn init(device: *Device, create_info: *const PipelineLayoutCreateInfo) !*Self {
-        return try createPipelineLayout(device, create_info, null);
+    /// Note: This only creates a single pipeline. If you need to create multiple pipelines, please
+    /// use the `createGraphicsPipelines` method
+    pub fn init(allocator: std.mem.Allocator, device: *Device, cache: ?*PipelineCache, create_info: GraphicsPipelineCreateInfo) !*Self {
+        const pipelines = try createGraphicsPipelines(allocator, device, cache, 1, &.{create_info}, null);
+        return &pipelines[0].*;
     }
 
     /// TODO: Figure out how I want to document manatee-specific deinit functions
     pub fn deinit(self: *Self, device: *Device) void {
-        return self.destroyPipelineLayout(device, null);
+        return self.destroyPipeline(device, null);
     }
 
-    /// Creates a new pipeline layout object
-    /// Original: `vkCreatePipelineLayout`
-    /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreatePipelineLayout.html
-    pub fn createPipelineLayout(device: *Device, create_info: *const PipelineLayoutCreateInfo, allocation_callbacks: ?*const AllocationCallbacks) !*Self {
-        var pipeline_layout: *Self = undefined;
-        try vkCreatePipelineLayout(device, create_info, allocation_callbacks, &pipeline_layout).check();
-        return pipeline_layout;
+    /// Create graphics pipelines
+    /// Original: `vkCreateGraphicsPipeline`
+    /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateGraphicsPipelines.html
+    pub fn createGraphicsPipelines(allocator: std.mem.Allocator, device: *Device, cache: ?*PipelineCache, create_info_count: u32, create_infos: [*]const GraphicsPipelineCreateInfo, allocation_callbacks: ?*const AllocationCallbacks) ![]*Self {
+        const graphics_pipelines = try allocator.alloc(*Pipeline, create_info_count);
+        try vkCreateGraphicsPipelines(device, cache, create_info_count, create_infos, allocation_callbacks, graphics_pipelines.ptr).check();
+        return graphics_pipelines;
     }
 
-    /// Destroy a pipeline layout object
-    /// Original: `vkDestroyPipelineLayout`
-    /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyPipelineLayout.html
-    pub fn destroyPipelineLayout(self: *Self, device: *Device, allocation_callbacks: ?*const AllocationCallbacks) void {
-        return vkDestroyPipelineLayout(device, self, allocation_callbacks);
+    /// Destroy a pipeline object
+    /// Original: `vkDestroyPipeline`
+    /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyPipeline.html
+    pub fn destroyPipeline(self: *Self, device: *Device, allocation_callbacks: ?*const AllocationCallbacks) void {
+        return vkDestroyPipeline(device, self, allocation_callbacks);
     }
 };
 
-/// Framebuffer blending factors
-/// Original: VkBlendFactor
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkBlendFactor.html
-pub const BlendFactor = enum(u32) {
-    zero = 0,
-    one = 1,
-    src_color = 2,
-    one_minus_src_color = 3,
-    dst_color = 4,
-    one_minus_dst_color = 5,
-    src_alpha = 6,
-    one_minus_src_alpha = 7,
-    dst_alpha = 8,
-    one_minus_dst_alpha = 9,
-    constant_color = 10,
-    one_minus_constant_color = 11,
-    constant_alpha = 12,
-    one_minus_constant_alpha = 13,
-    src_alpha_saturate = 14,
-    src1_color = 15,
-    one_minus_src1_color = 16,
-    src1_alpha = 17,
-    one_minus_src1_alpha = 18,
+/// Opaque handle to a pipeline cache object
+/// Original: `VkPipelineCache`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineCache.html
+pub const PipelineCache = opaque {};
+
+/// Comparison operator for depth, stencil, and sampler operations
+/// Original: `VkCompareOp`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkCompareOp.html
+pub const CompareOp = enum(u32) {
+    /// Specifies that the comparison always evaluates false.
+    never = 0,
+    /// Specifies that the comparison evaluates reference < test.
+    less = 1,
+    /// Specifies that the comparison evaluates reference = test.
+    equal = 2,
+    /// Specifies that the comparison evaluates reference ≤ test.
+    less_or_equal = 3,
+    /// Specifies that the comparison evaluates reference > test.
+    greater = 4,
+    /// Specifies that the comparison evaluates reference ≠ test.
+    not_equal = 5,
+    /// Specifies that the comparison evaluates reference ≥ test.
+    greater_or_equal = 6,
+    /// Specifies that the comparison always evaluates true.
+    always = 7,
 };
 
-/// Framebuffer blending operations
-/// Original: `VkBlendOp`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkBlendOp.html
-pub const BlendOp = enum(u32) {
-    add = 0,
-    subtract = 1,
-    reverse_subtract = 2,
-    min = 3,
-    max = 4,
-    zero_ext = 1000148000,
-    src_ext = 1000148001,
-    dst_ext = 1000148002,
-    src_over_ext = 1000148003,
-    dst_over_ext = 1000148004,
-    src_in_ext = 1000148005,
-    dst_in_ext = 1000148006,
-    src_out_ext = 1000148007,
-    dst_out_ext = 1000148008,
-    src_atop_ext = 1000148009,
-    dst_atop_ext = 1000148010,
-    xor_ext = 1000148011,
-    multiply_ext = 1000148012,
-    screen_ext = 1000148013,
-    overlay_ext = 1000148014,
-    darken_ext = 1000148015,
-    lighten_ext = 1000148016,
-    colordodge_ext = 1000148017,
-    colorburn_ext = 1000148018,
-    hardlight_ext = 1000148019,
-    softlight_ext = 1000148020,
-    difference_ext = 1000148021,
-    exclusion_ext = 1000148022,
-    invert_ext = 1000148023,
-    invert_rgb_ext = 1000148024,
-    lineardodge_ext = 1000148025,
-    linearburn_ext = 1000148026,
-    vividlight_ext = 1000148027,
-    linearlight_ext = 1000148028,
-    pinlight_ext = 1000148029,
-    hardmix_ext = 1000148030,
-    hsl_hue_ext = 1000148031,
-    hsl_saturation_ext = 1000148032,
-    hsl_color_ext = 1000148033,
-    hsl_luminosity_ext = 1000148034,
-    plus_ext = 1000148035,
-    plus_clamped_ext = 1000148036,
-    plus_clamped_alpha_ext = 1000148037,
-    plus_darker_ext = 1000148038,
-    minus_ext = 1000148039,
-    minus_clamped_ext = 1000148040,
-    contrast_ext = 1000148041,
-    invert_ovg_ext = 1000148042,
-    red_ext = 1000148043,
-    green_ext = 1000148044,
-    blue_ext = 1000148045,
+/// Supported primitive topologies
+/// Original: `VkPrimitiveTopology`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPrimitiveTopology.html
+pub const PrimitiveTopology = enum(u32) {
+    /// Specifies a series of separate point primitives.
+    point_list = 0,
+    /// Specifies a series of separate line primitives.
+    line_list = 1,
+    /// Specifies a series of connected line primitives with consecutive lines sharing a vertex.
+    line_strip = 2,
+    /// Specifies a series of separate triangle primitives.
+    triangle_list = 3,
+    /// Specifies a series of connected triangle primitives with consecutive triangles sharing an
+    /// edge.
+    triangle_strip = 4,
+    /// Specifies a series of connected triangle primitives with all triangles sharing a common
+    /// vertex.
+    triangle_fan = 5,
+    /// Specifies a series of separate line primitives with adjacency.
+    line_list_with_adjacency = 6,
+    /// Specifies a series of connected line primitives with adjacency, with consecutive primitives
+    /// sharing three vertices.
+    line_strip_with_adjacency = 7,
+    /// Specifies a series of separate triangle primitives with adjacency.
+    triangle_list_with_adjacency = 8,
+    /// Specifies connected triangle primitives with adjacency, with consecutive triangles sharing
+    /// an edge.
+    triangle_strip_with_adjacency = 9,
+    /// Specifies separate patch primitives.
+    patch_list = 10,
 };
 
-/// Indicate which dynamic state is taken from dynamic state commands
-/// Original: `VkDynamicState`
-/// See: https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkDynamicState.html
-/// TODO: Finish doc comments
-pub const DynamicState = enum(u32) {
-    viewport = 0,
-    scissor = 1,
-    line_width = 2,
-    depth_bias = 3,
-    blend_constants = 4,
-    depth_bounds = 5,
-    stencil_compare_mask = 6,
-    stencil_write_mask = 7,
-    stencil_reference = 8,
-    cull_mode = 1000267000,
-    front_face = 1000267001,
-    primitive_topology = 1000267002,
-    viewport_with_count = 1000267003,
-    scissor_with_count = 1000267004,
-    vertex_input_binding_stride = 1000267005,
-    depth_test_enable = 1000267006,
-    depth_write_enable = 1000267007,
-    depth_compare_op = 1000267008,
-    depth_bounds_test_enable = 1000267009,
-    stencil_test_enable = 1000267010,
-    stencil_op = 1000267011,
-    rasterizer_discard_enable = 1000377001,
-    depth_bias_enable = 1000377002,
-    primitive_restart_enable = 1000377004,
-    discard_rectangle_ext = 1000099000,
-    discard_rectangle_enable_ext = 1000099001,
-    discard_rectangle_mode_ext = 1000099002,
-    sample_locations_ext = 1000143000,
-    fragment_shading_rate_khr = 1000226000,
-    vertex_input_ext = 1000352000,
-    patch_control_points_ext = 1000377000,
-    logic_op_ext = 1000377003,
-    color_write_enable_ext = 1000381000,
-    line_stipple_khr = 1000259000,
+/// Stencil comparison function
+/// Original: `VkStencilOp`
+/// See: https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkStencilOp.html
+pub const StencilOp = enum(u32) {
+    /// Keeps the current value.
+    keep = 0,
+    /// Sets the value to 0.
+    zero = 1,
+    /// Sets the value to `reference`.
+    replace = 2,
+    /// Increments the current value and clamps to the maximum representable unsigned value.
+    increment_and_clamp = 3,
+    /// Decrements the current value and clamps to 0.
+    decrement_and_clamp = 4,
+    /// Bitwise-inverts the current value.
+    invert = 5,
+    /// Increments the current value and wraps to 0 when the maximum value would have been
+    /// exceeded.
+    increment_and_wrap = 6,
+    /// Decrements the current value and wraps to the maximum possible value when the value would
+    /// go below 0.
+    decrement_and_wrap = 7,
 };
 
-/// Interpret polygon front-facing orientation
-/// Original: `VkFrontFace`
-/// See: https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkFrontFace.html
-pub const FrontFace = enum(u32) {
-    /// specifies that a triangle with positive area is considered front-facing.
-    counter_clockwise = 0,
-    /// specifies that a triangle with negative area is considered front-facing.
-    clockwise = 1,
+/// Specify rate at which vertex attributes are pulled from buffers
+/// Original: `VkVertexInputRate`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkVertexInputRate.html
+pub const VertexInputRate = enum(u32) {
+    /// Specifies that vertex attribute addressing is a function of the vertex index.
+    vertex = 0,
+    /// Specifies that vertex attribute addressing is a function of the instance index.
+    instance = 1,
 };
 
-/// Framebuffer logical operations
-/// Original: `VkLogicOp`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkLogicOp.html
-pub const LogicOp = enum(u32) {
-    clear = 0,
-    @"and" = 1,
-    and_reverse = 2,
-    copy = 3,
-    and_inverted = 4,
-    no_op = 5,
-    xor = 6,
-    @"or" = 7,
-    nor = 8,
-    equivalent = 9,
-    invert = 10,
-    or_reverse = 11,
-    copy_inverted = 12,
-    or_inverted = 13,
-    nand = 14,
-    set = 15,
-};
-
-/// Control polygon rasterization mode
-/// Original: `VkPolygonMode`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPolygonMode.html
-pub const PolygonMode = enum(u32) {
-    /// Specifies that polygons are rendered using the polygon rasterization rules in this section.
-    fill = 0,
-    /// Specifies that polygon edges are drawn as line segments.
-    line = 1,
-    /// Specifies that polygon vertices are drawn as points.
-    point = 2,
-    /// Specifies that polygons are rendered using polygon rasterization rules, modified to
-    /// consider a sample within the primitive if the sample location is inside the axis-aligned
-    /// bounding box of the triangle after projection.
-    fill_rectangle_nv = 1000153000,
-};
-
-/// Bitmask controlling which components are written to the framebuffer
-/// Original: `VkColorComponentFlagBits`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkColorComponentFlagBits.html
-pub const ColorComponentFlags = packed struct(u32) {
-    /// Specifies that the R value is written to the color attachment for the appropriate sample.
-    r_bit_enabled: bool = false,
-    /// Specifies that the G value is written to the color attachment for the appropriate sample.
-    g_bit_enabled: bool = false,
-    /// Specifies that the B value is written to the color attachment for the appropriate sample.
-    b_bit_enabled: bool = false,
-    /// Specifies that the A value is written to the color attachment for the appropriate sample.
-    a_bit_enabled: bool = false,
-    _reserved_bit_4: u1 = 0,
-    _reserved_bit_5: u1 = 0,
-    _reserved_bit_6: u1 = 0,
-    _reserved_bit_7: u1 = 0,
-    _reserved_bit_8: u1 = 0,
-    _reserved_bit_9: u1 = 0,
-    _reserved_bit_10: u1 = 0,
-    _reserved_bit_11: u1 = 0,
-    _reserved_bit_12: u1 = 0,
-    _reserved_bit_13: u1 = 0,
-    _reserved_bit_14: u1 = 0,
-    _reserved_bit_15: u1 = 0,
-    _reserved_bit_16: u1 = 0,
-    _reserved_bit_17: u1 = 0,
-    _reserved_bit_18: u1 = 0,
-    _reserved_bit_19: u1 = 0,
-    _reserved_bit_20: u1 = 0,
-    _reserved_bit_21: u1 = 0,
-    _reserved_bit_22: u1 = 0,
-    _reserved_bit_23: u1 = 0,
-    _reserved_bit_24: u1 = 0,
-    _reserved_bit_25: u1 = 0,
-    _reserved_bit_26: u1 = 0,
-    _reserved_bit_27: u1 = 0,
-    _reserved_bit_28: u1 = 0,
-    _reserved_bit_29: u1 = 0,
-    _reserved_bit_30: u1 = 0,
-    _reserved_bit_31: u1 = 0,
-};
-
-/// Bitmask controlling triangle culling
-/// Original: `VkCullModeFlags`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkCullModeFlagBits.html
-pub const CullModeFlags = packed struct(u32) {
-    const Self = @This();
-
-    front_bit_enabled: bool = false,
-    back_bit_enabled: bool = false,
-    _reserved_bit_2: u1 = 0,
-    _reserved_bit_3: u1 = 0,
-    _reserved_bit_4: u1 = 0,
-    _reserved_bit_5: u1 = 0,
-    _reserved_bit_6: u1 = 0,
-    _reserved_bit_7: u1 = 0,
-    _reserved_bit_8: u1 = 0,
-    _reserved_bit_9: u1 = 0,
-    _reserved_bit_10: u1 = 0,
-    _reserved_bit_11: u1 = 0,
-    _reserved_bit_12: u1 = 0,
-    _reserved_bit_13: u1 = 0,
-    _reserved_bit_14: u1 = 0,
-    _reserved_bit_15: u1 = 0,
-    _reserved_bit_16: u1 = 0,
-    _reserved_bit_17: u1 = 0,
-    _reserved_bit_18: u1 = 0,
-    _reserved_bit_19: u1 = 0,
-    _reserved_bit_20: u1 = 0,
-    _reserved_bit_21: u1 = 0,
-    _reserved_bit_22: u1 = 0,
-    _reserved_bit_23: u1 = 0,
-    _reserved_bit_24: u1 = 0,
-    _reserved_bit_25: u1 = 0,
-    _reserved_bit_26: u1 = 0,
-    _reserved_bit_27: u1 = 0,
-    _reserved_bit_28: u1 = 0,
-    _reserved_bit_29: u1 = 0,
-    _reserved_bit_30: u1 = 0,
-    _reserved_bit_31: u1 = 0,
-
-    /// Specifies that no triangles are discarded
-    pub const none = Self{};
-    /// Specifies that front-facing triangles are discarded
-    pub const front_bit = Self{ .front_bit_enabled = true };
-    /// Specifies that back-facing triangles are discarded
-    pub const back_bit = Self{ .back_bit_enabled = true };
-    /// Specifies that all triangles are discarded.
-    pub const front_and_back = Self{ .front_bit_enabled = true, .back_bit_enabled = true };
-};
-
-/// Structure specifying a pipeline color blend attachment state
-/// Original: `VkPipelineColorBlendAttachmentState`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineColorBlendAttachmentState.html
-pub const PipelineColorBlendAttachmentState = extern struct {
-    /// Controls whether blending is enabled for the corresponding color attachment.
-    blend_enable: bool = false,
-    /// Selects which blend factor is used to determine the source factors
-    src_color_blend_factor: BlendFactor = .one,
-    /// Selects which blend factor is used to determine the destination factors
-    dst_color_blend_factor: BlendFactor = .zero,
-    /// Selects which blend operation is used to calculate the RGB values to write to the color
-    /// attachment.
-    color_blend_op: BlendOp = .add,
-    /// Selects which blend factor is used to determine the source factor
-    src_alpha_blend_factor: BlendFactor = .one,
-    /// Selects which blend factor is used to determine the destination factor
-    dst_alpha_blend_factor: BlendFactor = .zero,
-    /// Selects which blend operation is used to calculate the alpha values to write to the color
-    /// attachment.
-    alpha_blend_op: BlendOp = .add,
-    /// A bitmask of `ColorComponentFlagBits` specifying which of the R, G, B, and/or A components
-    /// are enabled for writing, as described for the Color Write Mask.
-    color_write_mask: ColorComponentFlags = ColorComponentFlags{ .r_bit_enabled = true, .g_bit_enabled = true, .b_bit_enabled = true, .a_bit_enabled = true },
-};
-
-/// Bitmask specifying additional parameters of an image
-/// Original: `VkPipelineColorBlendStateCreateFlags`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineColorBlendStateCreateFlagBits.html
-pub const PipelineColorBlendStateCreateFlags = packed struct(u32) {
-    const Self = @This();
-    create_rasterization_order_attachment_access_bit_ext_enabled: bool = false,
-    _reserved_bit_1: u1 = 0,
-    _reserved_bit_2: u1 = 0,
-    _reserved_bit_3: u1 = 0,
-    _reserved_bit_4: u1 = 0,
-    _reserved_bit_5: u1 = 0,
-    _reserved_bit_6: u1 = 0,
-    _reserved_bit_7: u1 = 0,
-    _reserved_bit_8: u1 = 0,
-    _reserved_bit_9: u1 = 0,
-    _reserved_bit_10: u1 = 0,
-    _reserved_bit_11: u1 = 0,
-    _reserved_bit_12: u1 = 0,
-    _reserved_bit_13: u1 = 0,
-    _reserved_bit_14: u1 = 0,
-    _reserved_bit_15: u1 = 0,
-    _reserved_bit_16: u1 = 0,
-    _reserved_bit_17: u1 = 0,
-    _reserved_bit_18: u1 = 0,
-    _reserved_bit_19: u1 = 0,
-    _reserved_bit_20: u1 = 0,
-    _reserved_bit_21: u1 = 0,
-    _reserved_bit_22: u1 = 0,
-    _reserved_bit_23: u1 = 0,
-    _reserved_bit_24: u1 = 0,
-    _reserved_bit_25: u1 = 0,
-    _reserved_bit_26: u1 = 0,
-    _reserved_bit_27: u1 = 0,
-    _reserved_bit_28: u1 = 0,
-    _reserved_bit_29: u1 = 0,
-    _reserved_bit_30: u1 = 0,
-    _reserved_bit_31: u1 = 0,
-
-    /// Specifies that access to color and input attachments will have implicit framebuffer-local
-    /// memory dependencies, allowing applications to express custom blending operations in a
-    /// fragment shader.
-    pub const create_rasterization_order_attachment_access_bit_ext = Self{ .create_rasterization_order_attachment_access_bit_ext_enabled = true };
-};
-
-/// Structure specifying parameters of a newly created pipeline color blend state
-/// Original: `VkPipelineColorBlendStateCreateInfo`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineColorBlendStateCreateInfo.html
-pub const PipelineColorBlendStateCreateInfo = extern struct {
-    /// A `StructureType` value identifying this structure.
-    type: StructureType = StructureType.pipeline_dynamic_state_create_info,
-    /// An optional pointer to a structure extending this structure.
-    next: ?*const anyopaque = null,
-    /// A bitmask of `PipelineColorBlendStateCreateFlagBits` specifying additional color blending
-    /// information.
-    flags: PipelineColorBlendStateCreateFlags = .{},
-    /// Controls whether to apply Logical Operations.
-    logic_op_enable: bool = false,
-    /// Selects which logical operation to apply.
-    logic_op: LogicOp = .clear,
-    /// The number of VkPipelineColorBlendAttachmentState elements in pAttachments.
-    attachment_count: u32,
-    /// A pointer to an array of VkPipelineColorBlendAttachmentState structures defining blend
-    /// state for each color attachment.
-    attachments: ?[*]const PipelineColorBlendAttachmentState = null,
-    /// A pointer to an array of four values used as the R, G, B, and A components of the blend
-    /// constant that are used in blending, depending on the blend factor.
-    blend_constants: *const [4]f32,
-};
-
-/// Structure specifying parameters of a newly created pipeline dynamic state
-/// Original: `VkPipelineDynamicStateCreateInfo`
-/// See: https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkPipelineDynamicStateCreateInfo.html
-pub const PipelineDynamicStateCreateInfo = extern struct {
-    /// A `StructureType` value identifying this structure.
-    type: StructureType = StructureType.pipeline_dynamic_state_create_info,
-    /// An optional pointer to a structure extending this structure.
-    next: ?*const anyopaque = null,
-    /// Reserved for future use.
-    flags: u32 = 0,
-    /// The number of elements in the dynamic_states array.
-    dynamic_state_count: u32,
-    /// A pointer to an array of `DynamicState` values specifying which pieces of pipeline state
-    /// will use the values from dynamic state commands rather than from pipeline state creation
-    /// information.
-    dynamic_states: ?[*]const DynamicState,
-};
-
-/// Structure specifying parameters of a newly created pipeline multisample state
-/// Original: `VkPipelineMultisampleStateCreateInfo`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineMultisampleStateCreateInfo.html
-pub const PipelineMultisampleStateCreateInfo = extern struct {
-    /// A `StructureType` value identifying this structure.
-    type: StructureType = StructureType.pipeline_multisample_state_create_info,
-    /// An optional pointer to a structure extending this structure.
-    next: ?*const anyopaque = null,
-    /// Reserved for future use.
-    flags: u32 = 0,
-    /// A `SampleCountFlag` value specifying the number of samples used in rasterization.
-    rasterization_samples: SampleCountFlags,
-    /// Used to enable Sample Shading.
-    sample_shading_enabled: bool = false,
-    /// Specifies a minimum fraction of sample shading if `sample_shading_enabled` is `true`.
-    min_sample_shading: f32 = 0.0,
-    /// A pointer to an array of `SampleMask` values used in the sample mask test.
-    sample_mask: ?[*]const u32 = null,
-    /// Controls whether a temporary coverage value is generated based on the alpha component of
-    /// the fragment’s first color output as specified in the Multisample Coverage section.
-    alpha_to_coverage_enable: bool = false,
-    /// controls whether the alpha component of the fragment’s first color output is replaced with
-    /// one as described in Multisample Coverage.
-    alpha_to_one_enable: bool = false,
-};
-
-/// Structure specifying the parameters of a newly created pipeline layout object
-/// Original: `VkPipelineLayoutCreateInfo`
-/// See: https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkPipelineLayoutCreateInfo.html
-pub const PipelineLayoutCreateInfo = extern struct {
+/// Structure specifying parameters of a newly created graphics pipeline
+/// Original: `vkGraphicsPipelineCreateInfo`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkGraphicsPipelineCreateInfo.html
+pub const GraphicsPipelineCreateInfo = extern struct {
     /// A `StructureType` value identifying this structure.
     type: StructureType = StructureType.pipeline_layout_create_info,
     /// An optional pointer to a structure extending this structure.
     next: ?*const anyopaque = null,
-    /// Reserved for future use.
-    flags: u32 = 0,
-    layouts_count: u32 = 0,
-    set_layouts: ?[*]const *DescriptorSetLayout = null,
-    push_constant_range_count: u32 = 0,
-    push_constant_ranges: ?[*]const PushConstantRange = null,
+    /// A bitmask of `PipelineCreateFlagBits` specifying how the pipeline will be generated.
+    flags: PipelineCreateFlags = .{},
+    /// The number of entries in the `stages` array.
+    stage_count: u32 = 0,
+    /// A pointer to an array of `stage_count` `PipelineShaderStageCreateInfo` structures
+    /// deascribing the set of the shader stages to be included in the graphics pipeline.
+    stages: ?[*]const PipelineShaderStageCreateInfo = null,
+    /// A pointer to a `PipelineVertexInputStateCreateInfo` structure.
+    vertex_input_state: ?*const PipelineVertexInputStateCreateInfo = null,
+    /// A pointer to a `PipelineInputAssemblyStateCreateInfo` structure which determines input
+    /// assembly behavior for vertex shading, as described in Drawing Commands.
+    input_assembly_state: ?*const PipelineInputAssemblyStateCreateInfo = null,
+    /// A pointer to a `PipelineTessellationStateCreateInfo` structure defining tessellation state
+    /// used by tessellation shaders.
+    tessellation_state: ?*const PipelineTessellationStateCreateInfo = null,
+    /// A pointer to a `PipelineViewportStateCreateInfo` structure defining viewport state used
+    /// when rasterization is enabled.
+    viewport_state: ?*const PipelineViewportStateCreateInfo = null,
+    /// A pointer to a `PipelineRasterizationStateCreateInfo` structure defining rasterization
+    /// state.
+    rasterization_state: ?*const PipelineRasterizationStateCreateInfo = null,
+    /// A pointer to a `PipelineMultisampleStateCreateInfo` structure defining multisample state
+    /// used when rasterization is enabled.
+    multisample_state: ?*const PipelineMultisampleStateCreateInfo = null,
+    /// A pointer to a `PipelineDepthStencilStateCreateInfo` structure defining depth/stencil state
+    /// used when rasterization is enabled for depth or stencil attachments accessed during
+    /// rendering.
+    depth_stencil_state: ?*const PipelineDepthStencilStateCreateInfo = null,
+    /// A pointer to a `PipelineColorBlendStateCreateInfo` structure defining color blend state
+    /// used when rasterization is enabled for any color attachments accessed during rendering.
+    color_blend_state: ?*const PipelineColorBlendStateCreateInfo = null,
+    /// A pointer to a `PipelineDynamicStateCreateInfo` structure defining which properties of the
+    /// pipeline state object are dynamic and can be changed independently of the pipeline state.
+    dynamic_state: ?*const PipelineDynamicStateCreateInfo = null,
+    /// The description of binding locations used by both the pipeline and descriptor sets used
+    /// with the pipeline.
+    layout: ?*PipelineLayout = null,
+    /// A handle to a render pass object describing the environment in which the pipeline will be
+    /// used.
+    render_pass: ?*RenderPass = null,
+    /// The index of the subpass in the render pass where this pipeline will be used.
+    subpass: u32 = 0,
+    /// A pipeline to derive from.
+    base_pipeline_handle: ?*Pipeline = null,
+    /// An index into the pCreateInfos parameter to use as a pipeline to derive from.
+    base_pipeline_index: i32 = 0,
 };
 
-/// Structure specifying parameters of a newly created pipeline rasterization state
-/// Original: `VkPipelineRasterizationStateCreateInfo`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineRasterizationStateCreateInfo.html
-pub const PipelineRasterizationStateCreateInfo = extern struct {
-    /// A `StructureType` value identifying this structure.
-    type: StructureType = StructureType.pipeline_rasterization_state_create_info,
-    /// An optional pointer to a structure extending this structure.
-    next: ?*const anyopaque = null,
-    /// Reserved for future use.
-    flags: u32 = 0,
-    /// Controls whether to clamp the fragment’s depth values as described in Depth Test.
-    depth_clamp_enable: bool = false,
-    /// Controls whether primitives are discarded immediately before the rasterization stage.
-    rasterizer_discard_enable: bool = false,
-    /// The triangle rendering mode.
-    polygon_mode: PolygonMode,
-    /// The triangle facing direction used for primitive culling.
-    cull_mode: CullModeFlags = CullModeFlags.none,
-    /// A `FrontFace` value specifying the front-facing triangle orientation to be used for
-    /// culling.
-    front_face: FrontFace,
-    /// Controls whether to bias fragment depth values.
-    depth_bias_enable: bool = false,
-    /// A scalar factor controlling the constant depth value added to each fragment.
-    depth_bias_constant_factor: f32 = 0.0,
-    /// The maximum (or minimum) depth bias of a fragment.
-    depth_bias_clamp: f32 = 0.0,
-    /// A scalar factor applied to a fragment’s slope in depth bias calculations.
-    depth_bias_slope_factor: f32 = 0.0,
-    /// The width of rasterized line segments.
-    line_width: f32 = 1.0,
+/// Bitmask controlling how a pipeline is created
+/// Original: `VkPipelineCreateFlags`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineCreateFlagBits.html
+/// TODO: Doc comments, etc
+pub const PipelineCreateFlags = packed struct(u32) {
+    disable_optimization_bit_enabled: bool = false,
+    allow_derivatives_bit_enabled: bool = false,
+    derivative_bit_enabled: bool = false,
+    view_index_from_device_index_bit_enabled: bool = false,
+    dispatch_base_bit_enabled: bool = false,
+    defer_compile_bit_nv_enabled: bool = false,
+    capture_statistics_bit_khr_enabled: bool = false,
+    capture_internal_representations_bit_khr_enabled: bool = false,
+    fail_on_pipeline_compile_required_bit_enabled: bool = false,
+    early_return_on_failure_bit_enabled: bool = false,
+    link_time_optimization_bit_ext_enabled: bool = false,
+    library_bit_khr_enabled: bool = false,
+    ray_tracing_skip_triangles_bit_khr_enabled: bool = false,
+    ray_tracing_skip_aabbs_bit_khr_enabled: bool = false,
+    ray_tracing_no_null_any_hit_shaders_bit_khr_enabled: bool = false,
+    ray_tracing_no_null_closest_hit_shaders_bit_khr_enabled: bool = false,
+    ray_tracing_no_null_miss_shaders_bit_khr_enabled: bool = false,
+    ray_tracing_no_null_intersection_shaders_bit_khr_enabled: bool = false,
+    indirect_bindable_bit_nv_enabled: bool = false,
+    ray_tracing_shader_group_handle_capture_replay_bit_khr_enabled: bool = false,
+    ray_tracing_allow_motion_bit_nv_enabled: bool = false,
+    rendering_fragment_shading_rate_attachment_bit_khr_enabled: bool = false,
+    rendering_fragment_density_map_attachment_bit_ext_enabled: bool = false,
+    retain_link_time_optimization_info_bit_ext_enabled: bool = false,
+    ray_tracing_opacity_micromap_bit_ext_enabled: bool = false,
+    color_attachment_feedback_loop_bit_ext_enabled: bool = false,
+    depth_stencil_attachment_feedback_loop_bit_ext_enabled: bool = false,
+    no_protected_access_bit_ext_enabled: bool = false,
+    ray_tracing_displacement_micromap_bit_nv_enabled: bool = false,
+    descriptor_buffer_bit_ext_enabled: bool = false,
+    protected_access_only_bit_ext_enabled: bool = false,
+    _reserved_bit_31: u1 = 0,
 };
 
-/// Structure specifying parameters of a newly created pipeline viewport state
-/// Original: `VkPipelineViewportStateCreateInfo`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineViewportStateCreateInfo.html
-pub const PipelineViewportStateCreateInfo = extern struct {
-    /// A `StructureType` value identifying this structure.
-    type: StructureType = StructureType.pipeline_viewport_state_create_info,
-    /// An optional pointer to a structure extending this structure.
-    next: ?*const anyopaque = null,
-    /// Reserved for future use.
-    flags: u32 = 0,
-    /// The number of viewports used by the pipeline.
-    viewport_count: u32,
-    /// A pointer to an array of `Viewport` structures, defining the viewport transforms. If the
-    /// viewport state is dynamic, this member is ignored.
-    viewports: ?[*]Viewport = null,
-    /// The number of scissors and must match the number of viewports.
-    scissor_count: u32,
-    /// A pointer to an array of `Rect2d` structures defining the rectangular bounds of the scissor
-    /// for the corresponding viewport. If the scissor state is dynamic, this member is ignored.
-    scissors: ?[*]Rect2d = null,
-};
+/// Bitmask specifying additional depth/stencil state information.
+/// Original: `VkPipelineDepthStencilCreateFlags`
+/// https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineDepthStencilStateCreateFlagBits.html
+pub const PipelineDepthStencilStateCreateFlags = packed struct(u32) {
+    const Self = @This();
 
-/// Structure specifying a push constant range
-/// Original: `VkPushConstantRange`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPushConstantRange.html
-pub const PushConstantRange = extern struct {
-    /// A set of stage flags describing the shader stages that will access a range of push constants.
-    stage_flags: ShaderStageFlags,
-    /// The start offset.
-    offset: u32,
-    /// The start size.
-    size: u32,
-};
-
-/// Structure specifying a two-dimensional subregion
-/// Original: `VkRect2D`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkRect2D.html
-pub const Rect2d = extern struct {
-    /// An `Offset2D` specifying the rectangle offset.
-    offset: Offset2d,
-    /// An `Extent2D` specifying the rectangle extent.
-    extent: Extent2d,
-};
-
-/// Bitmask specifying a pipeline stage
-/// Original: `VkShaderFlags`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkShaderStageFlagBits.html
-/// TODO: Doc comments and associated constants
-pub const ShaderStageFlags = packed struct(u32) {
-    vertex_bit_enabled: bool = false,
-    tessellation_control_bit_enabled: bool = false,
-    tessellation_evaluation_bit_enabled: bool = false,
-    geometry_bit_enabled: bool = false,
-    fragment_bit_enabled: bool = false,
-    compute_bit_enabled: bool = false,
-    task_bit_ext_enabled: bool = false,
-    mesh_bit_ext_enabled: bool = false,
-    raygen_bit_khr_enabled: bool = false,
-    any_hit_bit_khr_enabled: bool = false,
-    closest_hit_bit_khr_enabled: bool = false,
-    miss_bit_khr_enabled: bool = false,
-    intersection_bit_khr_enabled: bool = false,
-    callable_bit_khr_enabled: bool = false,
-    subpass_shading_bit_huawei_enabled: bool = false,
+    rasterization_order_attachment_depth_access_bit_ext_enabled: bool = false,
+    rasterization_order_attachment_stencil_access_bit_ext_enabled: bool = false,
+    _reserved_bit_2: u1 = 0,
+    _reserved_bit_3: u1 = 0,
+    _reserved_bit_4: u1 = 0,
+    _reserved_bit_5: u1 = 0,
+    _reserved_bit_6: u1 = 0,
+    _reserved_bit_7: u1 = 0,
+    _reserved_bit_8: u1 = 0,
+    _reserved_bit_9: u1 = 0,
+    _reserved_bit_10: u1 = 0,
+    _reserved_bit_11: u1 = 0,
+    _reserved_bit_12: u1 = 0,
+    _reserved_bit_13: u1 = 0,
+    _reserved_bit_14: u1 = 0,
     _reserved_bit_15: u1 = 0,
     _reserved_bit_16: u1 = 0,
     _reserved_bit_17: u1 = 0,
     _reserved_bit_18: u1 = 0,
-    cluster_culling_bit_huawei_enabled: bool = false,
+    _reserved_bit_19: u1 = 0,
     _reserved_bit_20: u1 = 0,
     _reserved_bit_21: u1 = 0,
     _reserved_bit_22: u1 = 0,
@@ -577,25 +281,244 @@ pub const ShaderStageFlags = packed struct(u32) {
     _reserved_bit_29: u1 = 0,
     _reserved_bit_30: u1 = 0,
     _reserved_bit_31: u1 = 0,
+
+    /// Specifies that access to the depth aspects of depth/stencil and input attachments will
+    /// have implicit framebuffer-local memory dependencies.
+    pub const rasterization_order_attachment_depth_access_bit_ext = Self{
+        .rasterization_order_attachment_depth_access_bit_ext_enabled = true,
+    };
+    /// Specifies that access to the stencil aspects of depth/stencil and input attachments will
+    /// have implicit framebuffer-local memory dependencies.
+    pub const rasterization_order_attachment_stencil_access_bit_ext = Self{
+        .rasterization_order_attachment_stencil_access_bit_ext_enabled = true,
+    };
 };
 
-/// Structure specifying a Viewport
-/// Original: `VkViewport`
-/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkViewport.html
-pub const Viewport = extern struct {
-    /// The viewport’s upper left corner x position.
-    x: f32,
-    /// The viewport’s upper left corner y position.
-    y: f32,
-    /// The viewport’s width.
-    width: f32,
-    /// The viewport’s height.
-    height: f32,
-    /// The minimum depth range for the viewport.
-    min_depth: f32,
-    /// The maximum depth range for the viewport.
-    max_depth: f32,
+/// Structure specifying parameters of a newly created pipeline depth stencil state
+/// Original: `VkPipelineDepthStencilStateCreateInfo`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineDepthStencilStateCreateInfo.html
+pub const PipelineDepthStencilStateCreateInfo = extern struct {
+    /// A `StructureType` value identifying this structure.
+    type: StructureType = StructureType.pipeline_depth_stencil_state_create_info,
+    /// An optional pointer to a structure extending this structure.
+    next: ?*const anyopaque = null,
+    /// A bitmask of `PipelineDepthStencilStateCreateFlagBits` specifying additional depth/stencil
+    /// state information.
+    flags: PipelineDepthStencilStateCreateFlags = .{},
+    /// Controls whether depth testing is enabled.
+    depth_test_enable: bool = false,
+    /// Controls whether depth writes are enabled when `depth_test_enable` is `true.
+    depth_write_enable: bool = false,
+    /// A `CompareOp` value specifying the comparison operator to use in the Depth Comparison step
+    /// of the depth test.
+    depth_compare_op: CompareOp,
+    /// Controls whether depth bounds testing is enabled.
+    depth_bounds_test_enable: bool = false,
+    /// Controls whether stencil testing is enabled.
+    stencil_test_enable: bool = false,
+    /// A `StencilOpState` value controlling the front parameters of the stencil test.
+    front: StencilOpState,
+    /// A `StencilOpState` value controlling the back parameters of the stencil test.
+    back: StencilOpState,
+    /// The minimum depth bound used in the depth bounds test.
+    min_depth_bounds: f32 = 0.0,
+    /// The maximum depth bound used in the depth bounds test.
+    max_depth_bounds: f32 = 0.0,
 };
 
-extern fn vkCreatePipelineLayout(device: *Device, pCreateInfo: *const PipelineLayoutCreateInfo, pAllocator: ?*const AllocationCallbacks, pPipelineLayout: **PipelineLayout) Result;
-extern fn vkDestroyPipelineLayout(device: *Device, pipelineLayout: *PipelineLayout, pAllocator: ?*const AllocationCallbacks) void;
+pub const PipelineInputAssemblyStateCreateInfo = extern struct {
+    /// A `StructureType` value identifying this structure.
+    type: StructureType = StructureType.pipeline_input_assembly_state_create_info,
+    /// An optional pointer to a structure extending this structure.
+    next: ?*const anyopaque = null,
+    /// Reserved for future use
+    flags: u32 = 0,
+    /// A `PrimitiveTopology` defining the primitive topology.
+    topology: PrimitiveTopology,
+    /// Controls whether a special vertex index value is treated as restarting the assembly of primitives.
+    primitive_restart_enable: bool,
+};
+
+/// Bitmask controlling how a pipeline shader stage is created
+/// Original: `VkPipelineShaderStageCreateFlags`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineShaderStageCreateFlagBits.html
+pub const PipelineShaderStageCreateFlags = packed struct(u32) {
+    const Self = @This();
+
+    allow_varying_subgroup_size_bit_enabled: bool = false,
+    require_full_subgroups_bit_enabled: bool = false,
+    _reserved_bit_2: u1 = 0,
+    _reserved_bit_3: u1 = 0,
+    _reserved_bit_4: u1 = 0,
+    _reserved_bit_5: u1 = 0,
+    _reserved_bit_6: u1 = 0,
+    _reserved_bit_7: u1 = 0,
+    _reserved_bit_8: u1 = 0,
+    _reserved_bit_9: u1 = 0,
+    _reserved_bit_10: u1 = 0,
+    _reserved_bit_11: u1 = 0,
+    _reserved_bit_12: u1 = 0,
+    _reserved_bit_13: u1 = 0,
+    _reserved_bit_14: u1 = 0,
+    _reserved_bit_15: u1 = 0,
+    _reserved_bit_16: u1 = 0,
+    _reserved_bit_17: u1 = 0,
+    _reserved_bit_18: u1 = 0,
+    _reserved_bit_19: u1 = 0,
+    _reserved_bit_20: u1 = 0,
+    _reserved_bit_21: u1 = 0,
+    _reserved_bit_22: u1 = 0,
+    _reserved_bit_23: u1 = 0,
+    _reserved_bit_24: u1 = 0,
+    _reserved_bit_25: u1 = 0,
+    _reserved_bit_26: u1 = 0,
+    _reserved_bit_27: u1 = 0,
+    _reserved_bit_28: u1 = 0,
+    _reserved_bit_29: u1 = 0,
+    _reserved_bit_30: u1 = 0,
+    _reserved_bit_31: u1 = 0,
+
+    /// Specifies that the SubgroupSize may vary in the shader stage.
+    pub const allow_varying_subgroup_size_bit = Self{ .allow_varying_subgroup_size_bit_enabled = true };
+    /// Specifies that the subgroup sizes must be launched with all invocations active in the task,
+    /// mesh, or compute stage.
+    pub const require_full_subgroups_bi = Self{ .require_full_subgroups_bi_enabled = true };
+};
+
+/// Structure specifying parameters of a newly created pipeline shader stage
+/// Original: `VkPipelineShaderStageCreateInfo`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineShaderStageCreateInfo.html
+pub const PipelineShaderStageCreateInfo = extern struct {
+    /// A `StructureType` value identifying this structure.
+    type: StructureType = StructureType.pipeline_shader_stage_create_info,
+    /// An optional pointer to a structure extending this structure.
+    next: ?*const anyopaque = null,
+    /// A bitmask of `PipelineShaderStageCreateFlagBits` specifying how the pipeline shader stage
+    /// will be generated.
+    flags: PipelineShaderStageCreateFlags = .{},
+    /// A `ShaderStageFlags` value specifying a single pipeline stage.
+    stage: ShaderStageFlags = .{},
+    /// An optional optionally `ShaderModule` object containing the shader code for this stage.
+    module: *ShaderModule,
+    /// A  pointer to a null-terminated UTF-8 string specifying the entry point name of the shader
+    /// for this stage.
+    name: ?[*:0]const u8 = null,
+    /// An optional pointer to a `SpecializationInfo` structure, as described in Specialization
+    /// Constants.
+    specialization_info: ?*SpecializationInfo = null,
+};
+
+/// Structure specifying parameters of a newly created pipeline tessellation state
+/// Original: `VkPipelineTessellationStateCreateInfo`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineTessellationStateCreateInfo.html
+pub const PipelineTessellationStateCreateInfo = extern struct {
+    /// A `StructureType` value identifying this structure.
+    type: StructureType = StructureType.pipeline_tessellation_state_create_info,
+    /// An optional pointer to a structure extending this structure.
+    next: ?*const anyopaque = null,
+    /// Reserved for future use.
+    flags: u32 = 0,
+    /// The number of control points per patch.
+    patch_control_points: u32,
+};
+
+/// Structure specifying parameters of a newly created pipeline vertex input state
+/// Original: `VkPipelineVertexInputStateCreateInfo`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineVertexInputStateCreateInfo.html
+pub const PipelineVertexInputStateCreateInfo = extern struct {
+    /// A `StructureType` value identifying this structure.
+    type: StructureType = StructureType.pipeline_vertex_input_state_create_info,
+    /// An optional pointer to a structure extending this structure.
+    next: ?*const anyopaque = null,
+    /// Reserved for future use.
+    flags: u32 = 0,
+    /// The number of vertex binding descriptions provided in `vertex_binding_descriptions`.
+    vertex_binding_description_count: u32 = 0,
+    /// A pointer to an array of `VertexInputBindingDescription` structures.
+    vertex_binding_descriptions: ?[*]const VertexInputBindingDescription = null,
+    /// The number of vertex binding descriptions provided in `vertex_binding_descriptions`.
+    vertex_attribute_description_count: u32 = 0,
+    /// A pointer to an array of `VertexInputAttributeDescription` structures.
+    vertex_attribute_descriptions: ?[*]const VertexInputAttributeDescription = null,
+};
+
+/// Structure specifying specialization information
+/// Original: `VkSpecializationInfo`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkSpecializationInfo.html
+pub const SpecializationInfo = extern struct {
+    /// The number of entries in the `map_entries` array.
+    man_entry_count: u32 = 0,
+    /// A pointer to an array of `SpecializationMapEntry` structures, which map constant IDs to
+    /// offsets in `data`.
+    map_entries: ?[*]const SpecializationMapEntry = null,
+    /// The byte size of the `data` buffer.
+    data_size: usize = 0,
+    /// The actual constant values to specialize with.
+    data: ?*const anyopaque = null,
+};
+
+/// Structure specifying a specialization map entry
+/// Original: `VkSpecializationMaoEntry`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkSpecializationMapEntry.html
+pub const SpecializationMapEntry = extern struct {
+    /// The ID of the specialization constant in SPIR-V.
+    constant_id: u32,
+    /// The byte offset of the specialization constant value within the supplied data buffer.
+    offset: u32,
+    /// The byte size of the specialization constant value within the supplied data buffer.
+    size: usize,
+};
+
+/// Structure specifying stencil operation state
+/// Original: `VkStencilOp`
+/// See: https://registry.khronos.org/VulkanSC/specs/1.0-extensions/man/html/VkStencilOpState.html
+pub const StencilOpState = extern struct {
+    /// A `StencilOp` value specifying the action performed on samples that fail the stencil test.
+    fail_op: StencilOp,
+    /// A `StencilOp` value specifying the action performed on samples that pass both the depth and
+    /// stencil tests.
+    pass_op: StencilOp,
+    /// A `StencilOp` value specifying the action performed on samples that pass the stencil test
+    /// and fail the depth test.
+    depth_fail_op: StencilOp,
+    /// A `CompareOp` value specifying the comparison operator used in the stencil test.
+    compare_op: CompareOp,
+    /// Selects the bits of the unsigned integer stencil values participating in the stencil test.
+    compare_mask: u32,
+    /// Selects the bits of the unsigned integer stencil values updated by the stencil test in the
+    /// stencil framebuffer attachment.
+    write_mask: u32,
+    /// An integer stencil reference value that is used in the unsigned stencil comparison.
+    reference: u32,
+};
+
+/// Structure specifying vertex input attribute description
+/// Original: `Vk`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkVertexInputAttributeDescription.html
+pub const VertexInputAttributeDescription = extern struct {
+    /// The shader input location number for this attribute.
+    location: u32,
+    /// The binding number which this attribute takes its data from.
+    binding: u32,
+    /// The size and type of the vertex attribute data.
+    format: Format,
+    /// A byte offset of this attribute relative to the start of an element in the vertex input
+    /// binding.
+    offset: u32,
+};
+
+/// Structure specifying vertex input binding description
+/// Original: `VkVertexInputBindingDescription`
+/// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkVertexInputBindingDescription.html
+pub const VertexInputBindingDescription = extern struct {
+    /// The binding number that this structure describes.
+    bindings: u32,
+    /// The byte stride between consecutive elements within the buffer.
+    stride: u32,
+    /// A `VertexInputRate` value specifying whether vertex attribute addressing is a function of
+    /// the vertex index or of the instance index.
+    input_rate: VertexInputRate,
+};
+
+extern fn vkCreateGraphicsPipelines(device: *Device, pipelineCache: ?*PipelineCache, createInfoCount: u32, pCreateInfos: [*]const GraphicsPipelineCreateInfo, pAllocator: ?*const AllocationCallbacks, pipelines: ?[*]*Pipeline) Result;
+extern fn vkDestroyPipeline(device: *Device, pipeline: *Pipeline, pAllocator: ?*const AllocationCallbacks) void;
