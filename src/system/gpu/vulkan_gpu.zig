@@ -26,6 +26,7 @@ const Window = @import("../window.zig").Window;
 /// Vulkan (and other external dynamic libraries) can be used within Zig.
 pub const VulkanGpu = struct {
     allocator: std.mem.Allocator,
+    command_pool: *vulkan.CommandPool,
     device: *vulkan.Device,
     framebuffers: []*vulkan.Framebuffer,
     graphics_pipeline: *vulkan.Pipeline,
@@ -323,8 +324,15 @@ pub const VulkanGpu = struct {
             framebuffers[idx] = try vulkan.Framebuffer.init(device, &framebuffer_create_info);
         }
 
+        // Create Command Pool
+        const command_pool_create_info = vulkan.CommandPoolCreateInfo{
+            .queue_family_index = physical_device.queue_family_index_graphics,
+        };
+        const command_pool = try vulkan.CommandPool.init(device, &command_pool_create_info);
+
         return VulkanGpu{
             .allocator = allocator,
+            .command_pool = command_pool,
             .device = device,
             .framebuffers = framebuffers,
             .graphics_pipeline = graphics_pipeline,
@@ -352,6 +360,7 @@ pub const VulkanGpu = struct {
 
     fn deinit(ctx: *anyopaque) void {
         const self: *VulkanGpu = @ptrCast(@alignCast(ctx));
+        self.command_pool.deinit(self.device);
         for (self.framebuffers) |framebuffer| {
             framebuffer.deinit(self.device);
         }

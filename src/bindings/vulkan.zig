@@ -1,3 +1,4 @@
+pub const command_pool = @import("vulkan/command_pool.zig");
 pub const device = @import("vulkan/device.zig");
 pub const framebuffer = @import("vulkan/framebuffer.zig");
 pub const image_view = @import("vulkan/image_view.zig");
@@ -10,6 +11,9 @@ pub const shader_module = @import("vulkan/shader_module.zig");
 pub const shared = @import("vulkan/shared.zig");
 pub const surface_khr = @import("vulkan/surface_khr.zig");
 pub const swapchain_khr = @import("vulkan/swapchain_khr.zig");
+
+pub const CommandPool = command_pool.CommandPool;
+pub const CommandPoolCreateInfo = command_pool.CommandPoolCreateInfo;
 
 pub const Device = device.Device;
 pub const DeviceCreateInfo = device.DeviceCreateInfo;
