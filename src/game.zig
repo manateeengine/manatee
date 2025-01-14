@@ -77,7 +77,6 @@ pub const Game = struct {
 
     /// Starts your game's event loop and runs until terminated
     pub fn run(self: *Game) !void {
-        _ = self.main_window.getNativeWindow();
         // Start the application event loop
         try self.app.run();
     }

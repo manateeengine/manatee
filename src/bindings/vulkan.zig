@@ -1,4 +1,5 @@
 pub const device = @import("vulkan/device.zig");
+pub const framebuffer = @import("vulkan/framebuffer.zig");
 pub const image_view = @import("vulkan/image_view.zig");
 pub const instance = @import("vulkan/instance.zig");
 pub const physical_device = @import("vulkan/physical_device.zig");
@@ -14,6 +15,9 @@ pub const Device = device.Device;
 pub const DeviceCreateInfo = device.DeviceCreateInfo;
 pub const DeviceQueueCreateInfo = device.DeviceQueueCreateInfo;
 pub const Queue = device.Queue;
+
+pub const Framebuffer = framebuffer.Framebuffer;
+pub const FramebufferCreateInfo = framebuffer.FramebufferCreateInfo;
 
 pub const ImageView = image_view.ImageView;
 pub const ImageViewCreateInfo = image_view.ImageViewCreateInfo;

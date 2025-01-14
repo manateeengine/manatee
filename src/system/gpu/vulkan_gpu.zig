@@ -27,6 +27,7 @@ const Window = @import("../window.zig").Window;
 pub const VulkanGpu = struct {
     allocator: std.mem.Allocator,
     device: *vulkan.Device,
+    framebuffers: []*vulkan.Framebuffer,
     graphics_pipeline: *vulkan.Pipeline,
     image_views: []*vulkan.ImageView,
     instance: *vulkan.Instance,
@@ -158,7 +159,6 @@ pub const VulkanGpu = struct {
         const images = try swapchain.getImagesKhr(allocator, device);
         defer allocator.free(images);
         const swapchain_extent = physical_device.surface_extent;
-        _ = swapchain_extent; // autofix
 
         const image_views = try allocator.alloc(*vulkan.ImageView, images.len);
 
@@ -308,9 +308,25 @@ pub const VulkanGpu = struct {
         };
         const graphics_pipeline = try vulkan.Pipeline.init(allocator, device, null, pipeline_create_info);
 
+        // Create Framebuffers
+        const framebuffers = try allocator.alloc(*vulkan.Framebuffer, image_views.len);
+        for (0..framebuffers.len) |idx| {
+            const attachments = [1]*vulkan.ImageView{image_views[idx]};
+            const framebuffer_create_info = vulkan.FramebufferCreateInfo{
+                .render_pass = render_pass,
+                .attachment_count = attachments.len,
+                .attachments = &attachments,
+                .width = swapchain_extent.width,
+                .height = swapchain_extent.height,
+                .layers = 1,
+            };
+            framebuffers[idx] = try vulkan.Framebuffer.init(device, &framebuffer_create_info);
+        }
+
         return VulkanGpu{
             .allocator = allocator,
             .device = device,
+            .framebuffers = framebuffers,
             .graphics_pipeline = graphics_pipeline,
             .image_views = image_views,
             .instance = instance,
@@ -336,6 +352,9 @@ pub const VulkanGpu = struct {
 
     fn deinit(ctx: *anyopaque) void {
         const self: *VulkanGpu = @ptrCast(@alignCast(ctx));
+        for (self.framebuffers) |framebuffer| {
+            framebuffer.deinit(self.device);
+        }
         self.graphics_pipeline.deinit(self.device);
         self.pipeline_layout.deinit(self.device);
         self.render_pass.deinit(self.device);
