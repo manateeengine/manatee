@@ -100,7 +100,7 @@ pub const CommandPoolCreateFlags = packed struct(u32) {
 /// See: https://registry.khronos.org/vulkan/specs/latest/man/html/VkCommandPoolCreateInfo.html
 pub const CommandPoolCreateInfo = extern struct {
     /// A `StructureType` value identifying this structure.
-    type: StructureType = StructureType.framebuffer_create_info,
+    type: StructureType = StructureType.command_pool_create_info,
     /// An optional pointer to a structure extending this structure.
     next: ?*const anyopaque = null,
     /// A bitmask of `CommandPoolCreateFlagBits` indicating usage behavior for the pool and command

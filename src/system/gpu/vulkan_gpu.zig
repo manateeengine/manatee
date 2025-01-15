@@ -327,8 +327,22 @@ pub const VulkanGpu = struct {
         // Create Command Pool
         const command_pool_create_info = vulkan.CommandPoolCreateInfo{
             .queue_family_index = physical_device.queue_family_index_graphics,
+            .flags = .{ .reset_command_buffer_bit_enabled = true },
         };
         const command_pool = try vulkan.CommandPool.init(device, &command_pool_create_info);
+
+        // Create Command Buffers
+        const command_buffer_allocate_info = vulkan.CommandBufferAllocateInfo{
+            .command_buffer_count = 1,
+            .level = .primary,
+            .command_pool = command_pool,
+        };
+        const command_buffers = try vulkan.CommandBuffer.allocateCommandBuffers(allocator, device, &command_buffer_allocate_info);
+        defer allocator.free(command_buffers); // TODO: Maybe remove? Idk
+        const command_buffer = command_buffers[0];
+
+        const command_buffer_begin_info = vulkan.CommandBufferBeginInfo{};
+        try command_buffer.beginCommandBuffer(&command_buffer_begin_info);
 
         return VulkanGpu{
             .allocator = allocator,
