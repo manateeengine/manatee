@@ -161,7 +161,7 @@ pub const GraphicsPipelineCreateInfo = extern struct {
     /// The number of entries in the `stages` array.
     stage_count: u32 = 0,
     /// A pointer to an array of `stage_count` `PipelineShaderStageCreateInfo` structures
-    /// deascribing the set of the shader stages to be included in the graphics pipeline.
+    /// describing the set of the shader stages to be included in the graphics pipeline.
     stages: ?[*]const PipelineShaderStageCreateInfo = null,
     /// A pointer to a `PipelineVertexInputStateCreateInfo` structure.
     vertex_input_state: ?*const PipelineVertexInputStateCreateInfo = null,

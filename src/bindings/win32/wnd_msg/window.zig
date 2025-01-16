@@ -356,7 +356,7 @@ pub const WindowStyleEx = packed struct(u32) {
     pub const no_activate = Self{ .no_activate_enabled = true };
     /// The window does not pass its window layout to its child windows.
     pub const no_inherit_layout = Self{ .no_inherit_layout_enabled = true };
-    /// The child window created with this style does not send the WM_PARENTNOTIFY message to its
+    /// The child window created with this style does not send the `parent_notify` message to its
     /// parent window when it is created or destroyed.
     pub const no_parent_notify = Self{ .no_parent_notify_enabled = true };
     /// The window does not render to a redirection surface.
