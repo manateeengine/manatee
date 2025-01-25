@@ -26,7 +26,7 @@ pub const Game = struct {
     allocator: std.mem.Allocator,
     app: system.app.App,
     config: GameConfig,
-    gpu: system.gpu.Gpu,
+    // gpu: system.gpu.Gpu,
     main_window: system.window.Window,
 
     pub fn init(allocator: std.mem.Allocator, config: GameConfig) !Game {
@@ -39,7 +39,7 @@ pub const Game = struct {
             base_app.* = try BaseApp.init(allocator);
         }
 
-        const app = base_app.app();
+        var app = base_app.app();
         errdefer app.deinit();
 
         // Create the main application window
@@ -48,29 +48,33 @@ pub const Game = struct {
 
         {
             errdefer allocator.destroy(base_window);
-            base_window.* = try BaseWindow.init(allocator, .{ .title = config.title });
+            base_window.* = try BaseWindow.init(allocator, &app, .{ .title = config.title });
         }
 
         var main_window = base_window.window();
         errdefer main_window.deinit();
 
-        // Connect to the GPU
-        const BaseGpu = system.gpu.getGpuInterfaceStruct();
-        const base_gpu = try allocator.create(BaseGpu);
+        // Set the newly created window as the app's main window. This is required to start the
+        // event loop in MacOS environments, and unused everywhere else
+        app.setMainWindow(&main_window);
 
-        {
-            errdefer allocator.destroy(base_gpu);
-            base_gpu.* = try BaseGpu.init(allocator, &app, &main_window);
-        }
+        // // Connect to the GPU
+        // const BaseGpu = system.gpu.getGpuInterfaceStruct();
+        // const base_gpu = try allocator.create(BaseGpu);
 
-        const gpu = base_gpu.gpu();
-        errdefer gpu.deinit();
+        // {
+        //     errdefer allocator.destroy(base_gpu);
+        //     base_gpu.* = try BaseGpu.init(allocator, &app, &main_window);
+        // }
+
+        // const gpu = base_gpu.gpu();
+        // errdefer gpu.deinit();
 
         return Game{
             .allocator = allocator,
             .app = app,
             .config = config,
-            .gpu = gpu,
+            // .gpu = gpu,
             .main_window = main_window,
         };
     }
@@ -84,7 +88,7 @@ pub const Game = struct {
     pub fn deinit(
         self: *Game,
     ) void {
-        self.gpu.deinit();
+        // self.gpu.deinit();
         self.main_window.deinit();
         self.app.deinit();
         self.* = undefined;

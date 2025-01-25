@@ -1,10 +1,17 @@
 //! The Apple AppKit Framework
 //! See: https://developer.apple.com/documentation/appkit
 
+const std = @import("std");
+
 const core_graphics = @import("core_graphics.zig");
+const foundation = @import("foundation.zig");
 const objective_c = @import("objective_c.zig");
 
+pub const Point = core_graphics.Point;
 pub const Rect = core_graphics.Rect;
+
+const Date = foundation.Date;
+const String = foundation.String;
 
 const Class = objective_c.Class;
 const ObjectMixin = objective_c.object.ObjectMixin;
@@ -33,6 +40,31 @@ pub const Application = opaque {
     /// TODO: Figure out how I want to document manatee-specific deinit functions
     pub fn deinit(self: *Self) void {
         return self.dealloc();
+    }
+};
+
+/// An abstract class that forms the basis of event and command processing in AppKit.
+/// Original: `NSApplication`
+/// See: https://developer.apple.com/documentation/appkit/nsresponder
+pub const Event = opaque {
+    const Self = @This();
+    pub usingnamespace EventMixin(Self);
+
+    /// TODO: Figure out how I want to document manatee-specific init functions
+    pub fn init() *Self {
+        // LOL WHY WOULD APPLE MAKE AN EVENT WITH A NAME THIS LONG
+        return Self.otherEventWithTypeLocationModifierFlagsTimestampWindowNumberContextSubtypeData1Data2(
+            "NSEvent",
+            .application_defined,
+            .{ .x = 0, .y = 0 },
+            .any,
+            0,
+            0,
+            null,
+            0,
+            0,
+            0,
+        );
     }
 };
 
@@ -118,6 +150,94 @@ pub const ApplicationActivationPolicy = enum(u32) {
     prohibited = 2,
 };
 
+/// Flags that represent key states in an event object.
+/// Original: `NSEventModifierFlags`
+/// See: https://developer.apple.com/documentation/appkit/nsevent/modifierflags-swift.struct
+pub const EventModifierFlags = enum(u64) {
+    /// The Caps Lock key has been pressed.
+    caps_lock = 65536,
+    /// The Shift key has been pressed.
+    shift = 131072,
+    /// The Control key has been pressed.
+    control = 262144,
+    /// The Option or Alt key has been pressed.
+    option = 524288,
+    /// The Command key has been pressed.
+    command = 1048576,
+    /// A key in the numeric keypad or an arrow key has been pressed.
+    numeric_pad = 2097152,
+    /// The Help key has been pressed.
+    help = 4194304,
+    /// A function key has been pressed.
+    function = 8388608,
+    /// Device-independent modifier flags are masked.
+    device_independent_flags_mask = 4294901760,
+    any = std.math.maxInt(u64),
+};
+
+/// Constants for the types of events that responder objects can handle.
+/// Original: `NSEventType`
+/// See: https://developer.apple.com/documentation/appkit/nsevent/eventtype
+pub const EventType = enum(u64) {
+    left_mouse_down = 1,
+    left_mouse_up = 2,
+    right_mouse_down = 3,
+    right_mouse_up = 4,
+    mouse_moved = 5,
+    left_mouse_dragged = 6,
+    right_mouse_dragged = 7,
+    mouse_entered = 8,
+    mouse_exited = 9,
+    key_down = 10,
+    key_up = 11,
+    flags_changed = 12,
+    app_kit_defined = 13,
+    system_defined = 14,
+    application_defined = 15,
+    periodic = 16,
+    cursor_update = 17,
+    scroll_wheel = 22,
+    tablet_point = 23,
+    tablet_proximity = 24,
+    other_mouse_down = 25,
+    other_mouse_up = 26,
+    other_mouse_dragged = 27,
+    gesture = 29,
+    magnify = 30,
+    swipe = 31,
+    rotate = 18,
+    begin_gesture = 19,
+    end_gesture = 20,
+    unknown,
+};
+
+/// Subtypes for various types of events.
+/// Original: `NSEventSubtype`
+/// See: https://developer.apple.com/documentation/appkit/nsevent/eventsubtype
+pub const EventSubType = enum(i16) {
+    window_exposed_or_mouse_event = 0,
+    application_activated_or_power_off_or_tablet_point = 1,
+    application_deactivated_or_tablet_proximity = 2,
+    touch = 3,
+    window_moved = 4,
+    unknown_event_5 = 5,
+    unknown_event_6 = 6,
+    unknown_event_7 = 7,
+    screen_changed = 8,
+    unknown,
+};
+
+/// Constants that you use to filter out specific event types from the stream of incoming events,
+/// conveniently rewritten into a Zig packed struct.
+/// Original: `NSEventMask`
+/// See: https://developer.apple.com/documentation/appkit/nsevent/eventtypemask
+pub const EventMask = packed struct(u64) {
+    _reserved_bit_0: u1 = 0,
+    _reserved_bit_1: u1 = 0,
+    _left_mouse_down_enabled: bool = false,
+    _todo: u61 = 0,
+};
+
 /// A Manatee Binding Mixin for the Objective-C Runtime's NSApplication class and its instances
 /// For more information on the mixin pattern, see `bindings/README.md`
 pub fn ApplicationMixin(comptime Self: type) type {
@@ -175,7 +295,12 @@ pub fn ApplicationMixin(comptime Self: type) type {
 
         // Methods defined under the NSWindow class's "Managing the Event Loop" section
 
-        // TODO: Implement wrapper for nextEventMatchingMask...
+        /// Returns the next event matching a given mask, or nil if no such event is found before a specified expiration date.
+        /// Original: `NSApplication.nextEventMatchingMask:untilDate:inMode:dequeue:`
+        /// See: https://developer.apple.com/documentation/appkit/nsapplication/nextevent(matching:until:inmode:dequeue:)
+        pub fn nextEventMatchingMaskUntilDateInModeDequeue(self: *Self, mask: u64, expiration: ?*Date, mode: *const String, dequeue_flag: bool) ?*Event {
+            return msgSend(self, ?*Event, Sel.init("nextEventMatchingMask:untilDate:inMode:dequeue:"), .{ mask, expiration, mode, dequeue_flag });
+        }
         // TODO: Implement wrapper for discardEventsMatchingMask...
         // TODO: Implement wrapper for currentEvent
         // TODO: Implement wrapper for running
@@ -184,18 +309,38 @@ pub fn ApplicationMixin(comptime Self: type) type {
         /// Original: `NSApplication.run()`
         /// See: https://developer.apple.com/documentation/appkit/nsapplication/run()
         pub fn run(self: *Self) void {
+            std.debug.print("Running NSApplication Event Loop\n", .{});
             return msgSend(self, void, Sel.init("run"), .{});
         }
 
         // TODO: Implement wrapper for finishLaunching
-        // TODO: Implement wrapper for stop:
-        // TODO: Implement wrapper for sendEvent:
-        // TODO: Implement wrapper for postEvent:atStart:
+
+        /// Stops the main event loop.
+        /// Original: `NSApplication.stop()`
+        /// See: https://developer.apple.com/documentation/appkit/nsapplication/stop(_:)
+        pub fn stop(self: *Self, sender: ?*anyopaque) void {
+            std.debug.print("Stopping NSApplication Event Loop\n", .{});
+            return msgSend(self, void, Sel.init("stop:"), .{sender});
+        }
+
+        /// Dispatches an event to other objects.
+        /// Original: `NSApplication.sendEvent:()`
+        /// See: https://developer.apple.com/documentation/appkit/nsapplication/sendevent(_:)
+        pub fn sendEvent(self: *Self, event: *Event) void {
+            return msgSend(self, void, Sel.init("sendEvent:"), .{event});
+        }
+
+        /// Adds a given event to the receiver’s event queue.
+        /// Original: `NSApplication.postEvent:atStart:()`
+        /// https://developer.apple.com/documentation/appkit/nsapplication/postevent(_:atstart:)
+        pub fn postEventAtStart(self: *Self, event: ?*Event, at_start: bool) void {
+            return msgSend(self, void, Sel.init("postEvent:atStart:"), .{ event, at_start });
+        }
 
         // TODO: Implement NSApplication class's "Posting Actions" section
         // TODO: Implement NSApplication class's "Terminating the App" section
 
-        // Methods defined under the NSWindow class's "Activating and Deactivating the App" section
+        // Methods defined under the NSApplication class's "Activating and Deactivating the App" section
 
         /// Activates the receiver app, if appropriate.
         /// Original: `NSApplication.activate`
@@ -212,7 +357,17 @@ pub fn ApplicationMixin(comptime Self: type) type {
         // TODO: Implement NSApplication class's "Managing Relaunch on Login" section
         // TODO: Implement NSApplication class's "Managing Remote Notifications" section
         // TODO: Implement NSApplication class's "Managing the App's Appearance" section
-        // TODO: Implement NSApplication class's "Managing Windows, Panels, and Menus" section
+
+        // Methods defined under the NSApplication class's "Managing Windows, Panels, and Menus"
+        // section
+
+        /// Sends an update message to each onscreen window.
+        /// Original: `NSApplication.updateWindows`
+        /// See: https://developer.apple.com/documentation/appkit/nsapplication/updatewindows()?changes=_9
+        pub fn updateWindows(self: *Self) void {
+            return msgSend(self, void, Sel.init("updateWindows"), .{});
+        }
+
         // TODO: Implement NSApplication class's "User Interface Layout Direction" section
         // TODO: Implement NSApplication class's "Accessing the Dock Tile" section
         // TODO: Implement NSApplication class's "Customizing the Touch Bar" section
@@ -224,7 +379,7 @@ pub fn ApplicationMixin(comptime Self: type) type {
         // TODO: Implement NSApplication class's "Managing Threads" section
         // TODO: Implement NSApplication class's "Logging Exceptions" section
 
-        // Methods defined under the NSWindow class's "Configuring the Activation Policy" section
+        // Methods defined under the NSApplication class's "Configuring the Activation Policy" section
 
         /// Returns the app’s activation policy.
         /// Original: `NSApplication.activationPolicy`
@@ -248,7 +403,35 @@ pub fn ApplicationMixin(comptime Self: type) type {
     };
 }
 
-/// A Manatee Binding Mixin for the Objective-C Runtime's NSResponder class and its instances
+/// A Manatee Binding Mixin for AppKit's NSEvent class and its instances
+/// For more information on the mixin pattern, see `bindings/README.md`
+pub fn EventMixin(comptime Self: type) type {
+    return struct {
+        const inherited_methods = ObjectMixin(Self);
+        pub usingnamespace inherited_methods;
+
+        pub fn otherEventWithTypeLocationModifierFlagsTimestampWindowNumberContextSubtypeData1Data2(class_name: [*:0]const u8, event_type: EventType, location: Point, flags: EventModifierFlags, time: f64, num: i32, unused_pass_nil: ?*anyopaque, sub_type: i16, d1: u32, d2: u32) *Self {
+            const class = Class.init(class_name) catch @panic("Unable to allocate class NSEvent");
+            return msgSend(class, *Self, Sel.init("otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:"), .{ event_type, location, flags, time, num, unused_pass_nil, sub_type, d1, d2 });
+        }
+
+        /// Gets the event’s type.
+        /// Original: `NSEvent.type`
+        /// See: https://developer.apple.com/documentation/appkit/nsevent/type
+        pub fn getType(self: *Self) EventType {
+            return msgSend(self, EventType, Sel.init("type"), .{});
+        }
+
+        /// Gets the event’s subtype.
+        /// Original: `NSEvent.subtype`
+        /// See: https://developer.apple.com/documentation/appkit/nsevent/subtype
+        pub fn getSubType(self: *Self) EventSubType {
+            return msgSend(self, EventSubType, Sel.init("subtype"), .{});
+        }
+    };
+}
+
+/// A Manatee Binding Mixin for AppKit's NSEvent class NSResponder class and its instances
 /// For more information on the mixin pattern, see `bindings/README.md`
 pub fn ResponderMixin(comptime Self: type) type {
     return struct {
@@ -281,7 +464,7 @@ pub fn ResponderMixin(comptime Self: type) type {
     // TODO: Implement NSResponder class's "Instance Methods" section
 }
 
-/// A Manatee Binding Mixin for the Objective-C Runtime's NSView class and its instances
+/// A Manatee Binding Mixin for AppKit's NSView class and its instances
 /// For more information on the mixin pattern, see `bindings/README.md`
 pub fn ViewMixin(comptime Self: type) type {
     return struct {
@@ -331,7 +514,7 @@ pub fn ViewMixin(comptime Self: type) type {
     };
 }
 
-/// A Manatee Binding Mixin for the Objective-C Runtime's NSWindow class and its instances
+/// A Manatee Binding Mixin for AppKit's NSWindow class and its instances
 /// For more information on the mixin pattern, see `bindings/README.md`
 pub fn WindowMixin(comptime Self: type) type {
     return struct {
@@ -351,7 +534,32 @@ pub fn WindowMixin(comptime Self: type) type {
 
         // TODO: Implement wrapper for initWithContentRect:styleMask:backing:defer:screen:
 
-        // TODO: Implement NSWindow class's "Managing a Window's Behavior" section
+        // Methods defined under the NSWindow class's "Managing a Window's Behavior" section
+
+        /// Returns the window’s delegate.
+        /// Original: `NSWindow.delegate`
+        /// See: https://developer.apple.com/documentation/appkit/nswindow/delegate
+        pub fn getDelegate(self: *Self) *anyopaque {
+            return msgSend(self, *anyopaque, Sel.init("delegate"), .{});
+        }
+
+        /// Sets the window’s delegate.
+        /// Original: `NSWindow.delegate`
+        /// See: https://developer.apple.com/documentation/appkit/nswindow/delegate
+        pub fn setDelegate(self: *Self, delegate: anytype) !void {
+            // Since everything needs to be an opaque type due to Zig not having inheritance (which
+            // is honestly not a bad thing), we'll need to do a little bit of runtime checking here
+            // to ensure whatever we're passing in actually implements the NSWindowDelegate
+            // protocol. Luckily for us, we have plenty of methods at our disposal to do this, and
+            // to make things even better, code won't even compile if the var passed in isn't an
+            // NSObject, as this calls that object's conformsToProtocol method
+            const window_delegate_protocol = try Protocol.init("NSWindowDelegate");
+            if (!delegate.conformsToProtocol(window_delegate_protocol)) {
+                return error.invalid_delegate_protocol;
+            }
+
+            return msgSend(self, void, Sel.init("setDelegate:"), .{delegate});
+        }
 
         // Methods defined under the NSWindow class's "Configuring the Window's Content" section
 
@@ -445,7 +653,6 @@ pub fn WindowMixin(comptime Self: type) type {
 pub const WindowStyleMask = packed struct(u32) {
     const Self = @This();
 
-    // _reserved_bit_0: u1 = 0,
     titled_enabled: bool = false,
     closable_enabled: bool = false,
     miniaturizable_enabled: bool = false,

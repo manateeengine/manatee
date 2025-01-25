@@ -1,6 +1,8 @@
 const builtin = @import("builtin");
 const std = @import("std");
 
+const App = @import("app.zig").App;
+
 /// The standard Manatee Window interface.
 ///
 /// A Window represents an operating system window in a desktop application. In the future, a
@@ -13,6 +15,7 @@ const std = @import("std");
 pub const Window = struct {
     ptr: *anyopaque,
     vtable: *const VTable,
+    app: *App,
 
     pub const VTable = struct {
         deinit: *const fn (ctx: *anyopaque) void,
