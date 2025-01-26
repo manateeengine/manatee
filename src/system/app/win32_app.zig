@@ -2,10 +2,12 @@ const std = @import("std");
 
 const win32 = @import("../../bindings.zig").win32;
 const App = @import("../app.zig").App;
+const Window = @import("../window.zig").Window;
 
 /// A Win32App implementation of the Manatee `App` interface.
 pub const Win32App = struct {
     allocator: std.mem.Allocator,
+    main_window: ?*Window = null,
     native_app: *win32.wnd_msg.Instance,
 
     pub fn init(allocator: std.mem.Allocator) !Win32App {
@@ -28,6 +30,7 @@ pub const Win32App = struct {
         .deinit = &deinit,
         .getNativeApp = &getNativeApp,
         .run = &run,
+        .setMainWindow = &setMainWindow,
     };
 
     fn deinit(ctx: *anyopaque) void {
@@ -48,5 +51,10 @@ pub const Win32App = struct {
             _ = msg.translateMessage();
             _ = msg.dispatchMessageW();
         }
+    }
+
+    fn setMainWindow(ctx: *anyopaque, window: ?*Window) void {
+        const self: *Win32App = @ptrCast(@alignCast(ctx));
+        self.main_window = window;
     }
 };

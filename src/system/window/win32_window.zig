@@ -3,6 +3,8 @@ const std = @import("std");
 const win32 = @import("../../bindings.zig").win32;
 const window = @import("../window.zig");
 
+const App = @import("../app.zig").App;
+
 const Window = window.Window;
 const WindowConfig = window.WindowConfig;
 const WindowDimensions = window.WindowDimensions;
@@ -10,10 +12,11 @@ const WindowDimensions = window.WindowDimensions;
 /// A Win32 implementation of the Manatee `Window` interface.
 pub const Win32Window = struct {
     allocator: std.mem.Allocator,
+    app: *App,
     dimensions: WindowDimensions,
     native_window: *win32.wnd_msg.Window,
 
-    pub fn init(allocator: std.mem.Allocator, config: WindowConfig) !Win32Window {
+    pub fn init(allocator: std.mem.Allocator, app: *App, config: WindowConfig) !Win32Window {
         const class_name = try std.unicode.utf8ToUtf16LeAllocZ(allocator, "ManateeWindowClass");
         defer allocator.free(class_name);
 
@@ -47,6 +50,7 @@ pub const Win32Window = struct {
 
         return Win32Window{
             .allocator = allocator,
+            .app = app,
             .dimensions = WindowDimensions{
                 .height = config.height,
                 .width = config.width,
@@ -57,6 +61,7 @@ pub const Win32Window = struct {
 
     pub fn window(self: *Win32Window) Window {
         return Window{
+            .app = self.app,
             .ptr = @ptrCast(self),
             .vtable = &vtable,
         };
