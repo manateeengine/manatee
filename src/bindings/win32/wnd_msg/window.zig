@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const Rect = @import("../display_devices.zig").Rect;
 const Brush = @import("brush.zig").Brush;
 const Cursor = @import("cursor.zig").Cursor;
 const Icon = @import("icon.zig").Icon;
@@ -44,12 +45,32 @@ pub const Window = opaque {
         return DestroyWindow(self);
     }
 
+    /// Retrieves the dimensions of the bounding rectangle of the specified window. The dimensions
+    /// are given in screen coordinates that are relative to the upper-left corner of the screen.
+    /// Original: `GetWindowRect`
+    /// See: https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowrect
+    pub fn getWindowRect(self: *Self) !Rect {
+        var rect: Rect = undefined;
+        if (GetWindowRect(self, &rect)) {
+            return error.get_window_rect_failed;
+        }
+        return rect;
+    }
+
     /// Indicates to the system that a thread has made a request to terminate (quit).
     /// Original: `PostQuitMessage'
     /// See: https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postquitmessage
     pub fn postQuitMessage(self: *Self, exit_code: i32) void {
         _ = self;
         return PostQuitMessage(exit_code);
+    }
+
+    /// Sets the keyboard focus to the specified window. The window must be attached to the calling
+    /// thread's message queue.
+    /// Original: `SetFocus`
+    /// See: https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setfocus
+    pub fn setFocus(self: *Self) void {
+        _ = SetFocus(self);
     }
 
     /// Sets the specified window's show state.
@@ -391,6 +412,8 @@ pub const WindowStyleEx = packed struct(u32) {
 extern "user32" fn CreateWindowExW(dwExStyle: WindowStyleEx, lpClassName: ?[*:0]const u16, lpWindowName: ?[*:0]const u16, dwStyle: WindowStyle, X: i32, Y: i32, nWidth: i32, nHeight: i32, hWndParent: ?*Window, hMenu: ?*Menu, hInstance: ?*Instance, lpParam: ?*const anyopaque) callconv(std.builtin.CallingConvention.winapi) *Window;
 extern "user32" fn DefWindowProcW(hwnd: *Window, Msg: u32, wParam: usize, lParam: isize) isize;
 extern "user32" fn DestroyWindow(hwnd: *Window) callconv(std.builtin.CallingConvention.winapi) bool;
+extern "user32" fn GetWindowRect(hwnd: *Window, lp_rect: *Rect) callconv(std.builtin.CallingConvention.winapi) bool;
 extern "user32" fn PostQuitMessage(nExitCode: i32) callconv(std.builtin.CallingConvention.winapi) void;
 extern "user32" fn RegisterClassExW(unnamedParam1: *const WindowClassExW) callconv(std.builtin.CallingConvention.winapi) u16;
+extern "user32" fn SetFocus(hwnd: *Window) callconv(std.builtin.CallingConvention.winapi) *Window;
 extern "user32" fn ShowWindow(hwnd: *Window, nCmdShow: i32) callconv(std.builtin.CallingConvention.winapi) bool;

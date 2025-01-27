@@ -13,7 +13,6 @@ const WindowDimensions = window.WindowDimensions;
 pub const Win32Window = struct {
     allocator: std.mem.Allocator,
     app: *App,
-    dimensions: WindowDimensions,
     native_window: *win32.wnd_msg.Window,
 
     pub fn init(allocator: std.mem.Allocator, app: *App, config: WindowConfig) !Win32Window {
@@ -46,15 +45,10 @@ pub const Win32Window = struct {
             instance,
             null,
         );
-        native_window.showWindow(.show);
 
         return Win32Window{
             .allocator = allocator,
             .app = app,
-            .dimensions = WindowDimensions{
-                .height = config.height,
-                .width = config.width,
-            },
             .native_window = native_window,
         };
     }
@@ -69,8 +63,10 @@ pub const Win32Window = struct {
 
     const vtable = Window.VTable{
         .deinit = &deinit,
+        .focus = &focus,
         .getDimensions = &getDimensions,
         .getNativeWindow = &getNativeWindow,
+        .show = &show,
     };
 
     fn deinit(ctx: *anyopaque) void {
@@ -79,14 +75,28 @@ pub const Win32Window = struct {
         self.allocator.destroy(self);
     }
 
+    fn focus(ctx: *anyopaque) void {
+        const self: *Win32Window = @ptrCast(@alignCast(ctx));
+        self.native_window.setFocus();
+    }
+
     fn getDimensions(ctx: *anyopaque) WindowDimensions {
         const self: *Win32Window = @ptrCast(@alignCast(ctx));
-        return self.dimensions;
+        const window_rect = self.native_window.getWindowRect() catch win32.display_devices.Rect{ .bottom = 0, .left = 0, .right = 0, .top = 0 };
+        return WindowDimensions{
+            .height = window_rect.bottom - window_rect.top,
+            .width = window_rect.right - window_rect.left,
+        };
     }
 
     fn getNativeWindow(ctx: *anyopaque) *anyopaque {
         const self: *Win32Window = @ptrCast(@alignCast(ctx));
         return self.native_window;
+    }
+
+    fn show(ctx: *anyopaque) void {
+        const self: *Win32Window = @ptrCast(@alignCast(ctx));
+        self.native_window.showWindow(.show);
     }
 
     /// Required to build the win32 event loop, used as a param when creating hwnd

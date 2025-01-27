@@ -55,6 +55,10 @@ pub const Win32App = struct {
 
     fn setMainWindow(ctx: *anyopaque, window: ?*Window) void {
         const self: *Win32App = @ptrCast(@alignCast(ctx));
+        if (window != null) {
+            window.?.show();
+            window.?.focus();
+        }
         self.main_window = window;
     }
 };
