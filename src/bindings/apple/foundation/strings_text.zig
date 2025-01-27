@@ -27,7 +27,7 @@ pub const String = opaque {
 
     /// TODO: Figure out how I want to document manatee-specific deinit functions
     pub fn deinit(self: *Self) void {
-        return self.dealloc();
+        return self.release();
     }
 };
 

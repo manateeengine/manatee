@@ -5,6 +5,8 @@ const apple = @import("../../bindings.zig").apple;
 const App = @import("../app.zig").App;
 const Window = @import("../window.zig").Window;
 
+const ManateeApplicationDelegate = @import("./macos_app/manatee_application_delegate.zig").ManateeApplicationDelegate;
+
 /// A MacOS implementation of the Manatee `App` interface.
 pub const MacosApp = struct {
     allocator: std.mem.Allocator,
@@ -23,6 +25,10 @@ pub const MacosApp = struct {
 
         // Now that we've set up our delegate, let's apply it to our app!
         try application_instance.setDelegate(delegate_instance);
+
+        // application_instance.run();
+
+        try application_instance.setActivationPolicy(.regular);
 
         return MacosApp{
             .allocator = allocator,
@@ -64,8 +70,7 @@ pub const MacosApp = struct {
             return error.main_window_not_set;
         }
 
-        try self.native_app.setActivationPolicy(.regular);
-        self.native_app.activate();
+        // self.native_app.run();
 
         // Since the Manatee app interface is designed to work cross-platform, we have to ensure
         // that everything, regardless off platform, is built as similarly as possible. Since Win32
@@ -88,16 +93,22 @@ pub const MacosApp = struct {
         // So yeah, lots of steps here, and I'm not sure why some of them are needed, but they're
         // all required to make this thing work!
 
-        std.debug.print("Executing NSApplication.run()\n", .{});
-        self.native_app.run();
-        std.debug.print("Entering Custom Manatee Loop\n", .{});
+        // std.debug.print("Executing NSApplication.run()\n", .{});
+        // self.native_app.run();
 
-        // var should_exit = false;
-        // var event: ?*apple.app_kit.Event = apple.app_kit.Event.init();
+        // std.debug.print("Finishing App Launch\n", .{});
+        // self.native_app.finishLaunching();
+
+        // std.debug.print("Posting Empty Event\n", .{});
+        // const empty_event = apple.app_kit.Event.init();
+        // self.native_app.postEventAtStart(empty_event, true);
+
+        // std.debug.print("Entering Custom Manatee Loop\n", .{});
         const until_date = try apple.foundation.Date.initDistantFuture();
         const in_mode = try apple.foundation.String.init("default");
         const dequeue = true;
-        while (self.main_window != null) {
+
+        while (true) {
             const event = self.native_app.nextEventMatchingMaskUntilDateInModeDequeue(
                 std.math.maxInt(u64),
                 until_date,
@@ -105,96 +116,27 @@ pub const MacosApp = struct {
                 dequeue,
             );
 
-            if (event != null) {
-                // TODO: Manatee probably needs to do things with this event at some point lol
-                const event_type = event.?.getType();
-                // const event_subtype = event.?.getSubType();
-                // _ = event_subtype;
-                std.debug.print("Event Type {}\n", .{event_type});
-                // std.debug.print("Event Sub Type {}\n", .{event_subtype});
-                self.native_app.sendEvent(event.?);
+            if (event == null) {
+                std.debug.print("Event is Null\n", .{});
+                break;
             }
+
+            const event_type = event.?.getType();
+            std.debug.print("Event Type: {}\n", .{event_type});
+
+            self.native_app.sendEvent(event.?);
             self.native_app.updateWindows();
-            // const mode = try apple.foundation.String.init("default");
-            // event = self.native_app.nextEventMatchingMaskUntilDateInModeDequeue(std.math.maxInt(u64), null, mode, true);
-            // if (event != null) {
-            //     const event_type = event.?.getType();
-            //     switch (event_type) {
-            //         @intFromEnum(apple.app_kit.EventType.key_down) => {
-            //             should_exit = true;
-            //         },
-            //         else => {
-            //             std.debug.print("Event With Type {}\n", .{event_type});
-            //         },
-            //     }
-            // }
+            event.?.release();
         }
+        std.debug.print("Exiting Manatee Event Loop\n", .{});
     }
 
     fn setMainWindow(ctx: *anyopaque, window: ?*Window) void {
         const self: *MacosApp = @ptrCast(@alignCast(ctx));
+        if (window != null) {
+            window.?.show();
+            window.?.focus();
+        }
         self.main_window = window;
     }
-};
-
-/// A Custom Objective-C Application Delegate for Manatee
-const ManateeApplicationDelegate = opaque {
-    const Self = @This();
-    pub usingnamespace apple.objective_c.object.ObjectMixin(Self);
-
-    pub fn init() !*Self {
-        // Get the NSApplicationDelegate Protocol
-        const application_delegate_protocol = try apple.objective_c.Protocol.init("NSApplicationDelegate");
-
-        // Create a new Objective-C Class based off of NSObject. This class will act as our custom
-        // delegate, so we'll name it ManateeApplicationDelegate
-        const delegate_class = try apple.objective_c.Class.allocateClassPair(try apple.objective_c.Class.init("NSObject"), "ManateeApplicationDelegate", null);
-
-        // Add NSApplicationDelegate and register the class
-        try delegate_class.addProtocol(application_delegate_protocol);
-
-        // Add any custom methods to the class
-        // try delegate_class.addMethod(
-        //     apple.objective_c.Sel.init("applicationShouldTerminateAfterLastWindowClosed:"),
-        //     applicationShouldTerminateAfterLastWindowClosed,
-        //     "b@:",
-        // );
-
-        try delegate_class.addMethod(
-            apple.objective_c.Sel.init("applicationDidFinishLaunching:"),
-            applicationDidFinishLaunching,
-            "v@:@",
-        );
-
-        delegate_class.registerClassPair();
-        return try Self.new("ManateeApplicationDelegate");
-    }
-
-    pub fn deinit(self: *Self) void {
-        return self.dealloc();
-    }
-
-    fn applicationDidFinishLaunching(self: *Self, _cmd: *apple.objective_c.Sel, _ns_notification: *anyopaque) callconv(.c) void {
-        // These params are required by the Objective-C runtime but we don't use them here
-        _ = _cmd;
-        _ = _ns_notification;
-
-        // It may look like we're creating another application here, but under the hood the Manatee
-        // Application.init() call actually fetches the AppKit sharedApplication, which returns the
-        // existing instance if it's already been created!
-
-        // As a note, we can't use Zig error returns inside of App Delegate functions, so if the
-        // delegate can't get the NSApplication class, it panics, which is a little ugly but eh,
-        // it's not like I have another more Zig-friendly choice here (that I know if, that is)
-        const shared_app_instance = apple.app_kit.Application.init() catch @panic("Unable to get sharedApplication in Manatee App Delegate");
-
-        shared_app_instance.stop(self);
-    }
-
-    // fn applicationShouldTerminateAfterLastWindowClosed(_self: *Self, _cmd: *apple.objective_c.Sel) callconv(.c) bool {
-    //     // These params are required by the Objective-C runtime but we don't use them here
-    //     _ = _self;
-    //     _ = _cmd;
-    //     return true;
-    // }
 };

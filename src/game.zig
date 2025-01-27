@@ -54,10 +54,6 @@ pub const Game = struct {
         var main_window = base_window.window();
         errdefer main_window.deinit();
 
-        // Set the newly created window as the app's main window. This is required to start the
-        // event loop in MacOS environments, and unused everywhere else
-        app.setMainWindow(&main_window);
-
         // // Connect to the GPU
         // const BaseGpu = system.gpu.getGpuInterfaceStruct();
         // const base_gpu = try allocator.create(BaseGpu);
@@ -81,6 +77,10 @@ pub const Game = struct {
 
     /// Starts your game's event loop and runs until terminated
     pub fn run(self: *Game) !void {
+        // Set the newly created window as the app's main window. This is required to start the
+        // event loop in MacOS environments, and unused everywhere else
+        self.app.setMainWindow(&self.main_window);
+
         // Start the application event loop
         try self.app.run();
     }

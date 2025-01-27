@@ -19,8 +19,10 @@ pub const Window = struct {
 
     pub const VTable = struct {
         deinit: *const fn (ctx: *anyopaque) void,
+        focus: *const fn (ctx: *anyopaque) void,
         getDimensions: *const fn (ctx: *anyopaque) WindowDimensions,
         getNativeWindow: *const fn (ctx: *anyopaque) *anyopaque,
+        show: *const fn (ctx: *anyopaque) void,
     };
 
     /// Returns an opaque pointer to the Window's associated OS-level window object.
@@ -34,6 +36,16 @@ pub const Window = struct {
     /// Returns the current width and height of the Window.
     pub fn getDimensions(self: Window) WindowDimensions {
         return self.vtable.getDimensions(self.ptr);
+    }
+
+    /// Focuses the current window
+    pub fn focus(self: Window) void {
+        return self.vtable.focus(self.ptr);
+    }
+
+    /// Shows the current window
+    pub fn show(self: Window) void {
+        return self.vtable.show(self.ptr);
     }
 
     /// Handles memory cleanup of anything created during the Window's initialization process.

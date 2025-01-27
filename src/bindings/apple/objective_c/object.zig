@@ -18,7 +18,7 @@ pub const Object = opaque {
 
     /// TODO: Figure out how I want to document manatee-specific deinit functions
     pub fn deinit(self: *Self) void {
-        return self.dealloc();
+        return self.release();
     }
 };
 
@@ -293,6 +293,39 @@ pub fn ObjectProtocolMixin(comptime Self: type) type {
         pub fn isProxy(self: *Self) bool {
             return msgSend(self, bool, Sel.init("isProxy"), .{});
         }
+
+        // Methods defined under the NSObject protocol's "Obsolete Methods" section
+        // Note: Although these methods are marked as obsolete, some of them are still useful in
+        // the context of Zig. These methods include support for manual reference counting, or ARC.
+        // ARC is preferred in Apple's docs when writing Objective-C, and made easier by the helper
+        // @autoreleasepool, however, having functionality that automatically releases memory feels
+        // wrong inside of Zig. Because of this caveat, we're still implementing these methods
+
+        /// Increments the receiver’s reference count.
+        /// Original: `@protocol NSObject.retain`
+        /// See: https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571946-retain
+        pub fn retain(self: *Self) *Self {
+            return msgSend(self, *Self, Sel.init("retain"), .{});
+        }
+
+        /// Decrements the receiver’s reference count.
+        /// Original: `@protocol NSObject.release`
+        /// See: https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571957-release
+        pub fn release(self: *Self) void {
+            return msgSend(self, void, Sel.init("release"), .{});
+        }
+
+        /// Decrements the receiver’s retain count at the end of the current autorelease pool
+        /// block.
+        /// Original: `@protocol NSObject.autorelease`
+        /// See: https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571951-autorelease
+        pub fn autorelease(self: *Self) void {
+            return msgSend(self, void, Sel.init("autorelease"), .{});
+        }
+
+        // Note: I decided to omit the `retainCount` and `zone` methods from this mixin since the
+        // docs explicitly said to never use them. If someone finds value in these methods, they're
+        // free to open a PR and add them here, but it's not worth my time at this point
     };
 }
 

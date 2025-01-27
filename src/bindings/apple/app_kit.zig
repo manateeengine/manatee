@@ -39,7 +39,7 @@ pub const Application = opaque {
 
     /// TODO: Figure out how I want to document manatee-specific deinit functions
     pub fn deinit(self: *Self) void {
-        return self.dealloc();
+        return self.release();
     }
 };
 
@@ -82,7 +82,7 @@ pub const Responder = opaque {
 
     /// TODO: Figure out how I want to document manatee-specific deinit functions
     pub fn deinit(self: *Self) void {
-        return self.dealloc();
+        return self.release();
     }
 };
 
@@ -100,7 +100,7 @@ pub const View = opaque {
 
     /// TODO: Figure out how I want to document manatee-specific deinit functions
     pub fn deinit(self: *Self) void {
-        return self.dealloc();
+        return self.release();
     }
 };
 
@@ -119,11 +119,23 @@ pub const Window = opaque {
 
     /// TODO: Figure out how I want to document manatee-specific deinit functions
     pub fn deinit(self: *Self) void {
-        return self.dealloc();
+        return self.release();
     }
 };
 
 // Enums
+
+/// Constants that determine whether an app should terminate.
+/// Original: `NSApplicationTerminateReply`
+/// See: https://developer.apple.com/documentation/appkit/nsapplication/terminatereply
+pub const ApplicationTerminateReply = enum(u32) {
+    /// The app should not be terminated.
+    cancel = 0,
+    /// It is OK to proceed with termination.
+    now = 1,
+    /// It may be OK to proceed with termination later.
+    later = 2,
+};
 
 /// Constants that specify how the window device buffers the drawing done in a window.
 /// Original: `NSBackingStoreType`
@@ -309,17 +321,20 @@ pub fn ApplicationMixin(comptime Self: type) type {
         /// Original: `NSApplication.run()`
         /// See: https://developer.apple.com/documentation/appkit/nsapplication/run()
         pub fn run(self: *Self) void {
-            std.debug.print("Running NSApplication Event Loop\n", .{});
             return msgSend(self, void, Sel.init("run"), .{});
         }
 
-        // TODO: Implement wrapper for finishLaunching
+        /// Starts the main event loop.
+        /// Original: `NSApplication.run()`
+        /// See: https://developer.apple.com/documentation/appkit/nsapplication/run()
+        pub fn finishLaunching(self: *Self) void {
+            return msgSend(self, void, Sel.init("finishLaunching"), .{});
+        }
 
         /// Stops the main event loop.
         /// Original: `NSApplication.stop()`
         /// See: https://developer.apple.com/documentation/appkit/nsapplication/stop(_:)
         pub fn stop(self: *Self, sender: ?*anyopaque) void {
-            std.debug.print("Stopping NSApplication Event Loop\n", .{});
             return msgSend(self, void, Sel.init("stop:"), .{sender});
         }
 
@@ -353,6 +368,14 @@ pub fn ApplicationMixin(comptime Self: type) type {
         // TODO: Implement wrapper for active
         // TODO: Implement wrapper for yieldActivationToApplication:
         // TODO: Implement wrapper for yieldActivationToApplicationWithBundleIdentifier:
+
+        /// Makes the receiver the active app.
+        /// Original: `NSApplication.activateIgnoringOtherApps:`
+        /// See: https://developer.apple.com/documentation/appkit/nsapplication/activate(ignoringotherapps:)
+        /// DEPRECATED: Use the `NSApplication` method `activate` instead
+        pub fn activateIgnoringOtherApps(self: *Self, ignore_other_apps: bool) void {
+            return msgSend(self, void, Sel.init("activateIgnoringOtherApps:"), .{ignore_other_apps});
+        }
 
         // TODO: Implement NSApplication class's "Managing Relaunch on Login" section
         // TODO: Implement NSApplication class's "Managing Remote Notifications" section
@@ -586,8 +609,26 @@ pub fn WindowMixin(comptime Self: type) type {
         // TODO: Implement NSWindow class's "Managing Sheets" section
         // TODO: Implement NSWindow class's "Creating a Window" section
         // TODO: Implement NSWindow class's "Sizing Windows" section
+
+        /// Retrieves window’s frame rectangle in screen coordinates, including the title bar.
+        /// Original: `NSWindow.frame`
+        /// See: https://developer.apple.com/documentation/appkit/nswindow/frame?language=objc
+        pub fn getFrame(self: *Self) Rect {
+            return msgSend(self, Rect, Sel.init("frame"), .{});
+        }
+
         // TODO: Implement NSWindow class's "Sizing Content" section
-        // TODO: Implement NSWindow class's "Managing Window Layers" section
+
+        // Methods defined under the NSWindow class's "Managing Window Layers" section
+
+        /// Moves the window to the front of its level in the screen list, without changing either
+        /// the key window or the main window.
+        /// Original: `NSWindow.orderFront:`
+        /// See: https://developer.apple.com/documentation/appkit/nswindow/orderfront(_:)?language=objc
+        pub fn orderFront(self: *Self) void {
+            return msgSend(self, void, Sel.init("orderFront:"), .{});
+        }
+
         // TODO: Implement NSWindow class's "Managing Window Visibility and Occlusion State"
         // section
         // TODO: Implement NSWindow class's "Managing Window Frames in User Defaults" section

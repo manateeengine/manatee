@@ -13,9 +13,8 @@ const WindowDimensions = window.WindowDimensions;
 pub const MacosWindow = struct {
     allocator: std.mem.Allocator,
     app: *App,
-    delegate: *ManateeWindowDelegate,
-    dimensions: WindowDimensions,
-    metal_layer: *apple.core_animation.MetalLayer,
+    // delegate: *ManateeWindowDelegate,
+    // metal_layer: *apple.core_animation.MetalLayer,
     native_window: *apple.app_kit.Window,
 
     pub fn init(allocator: std.mem.Allocator, app: *App, config: WindowConfig) !MacosWindow {
@@ -38,32 +37,26 @@ pub const MacosWindow = struct {
         errdefer window_instance.deinit();
 
         // Create a Window Delegate to allow us to customize the window's behavior
-        const delegate_instance = try ManateeWindowDelegate.init();
-        errdefer delegate_instance.deinit();
+        // const delegate_instance = try ManateeWindowDelegate.init();
+        // errdefer delegate_instance.deinit();
 
         // Now that we've set up our delegate, let's apply it to our app!
-        try window_instance.setDelegate(delegate_instance);
+        // try window_instance.setDelegate(delegate_instance);
 
-        // Now that we have our window, let's go ahead and create a MetalLayer for the window. This
-        // will let us render GPU content into the window either via MoltenVK or the Metal API!
-        const metal_layer = try apple.core_animation.MetalLayer.init();
+        // // Now that we have our window, let's go ahead and create a MetalLayer for the window. This
+        // // will let us render GPU content into the window either via MoltenVK or the Metal API!
+        // const metal_layer = try apple.core_animation.MetalLayer.init();
 
-        // Let's assign the metal layer to the window's layer
-        const window_content_view: *apple.app_kit.View = @ptrCast(window_instance.getContentView());
-        window_content_view.setWantsLayer(true);
-        window_content_view.setLayer(metal_layer);
-
-        window_instance.makeKeyAndOrderFront();
+        // // Let's assign the metal layer to the window's layer
+        // const window_content_view: *apple.app_kit.View = @ptrCast(window_instance.getContentView());
+        // window_content_view.setWantsLayer(true);
+        // window_content_view.setLayer(metal_layer);
 
         return MacosWindow{
             .allocator = allocator,
             .app = app,
-            .delegate = delegate_instance,
-            .dimensions = WindowDimensions{
-                .height = config.height,
-                .width = config.width,
-            },
-            .metal_layer = metal_layer,
+            // .delegate = delegate_instance,
+            // .metal_layer = metal_layer,
             .native_window = window_instance,
         };
     }
@@ -80,28 +73,41 @@ pub const MacosWindow = struct {
         .deinit = &deinit,
         .getDimensions = &getDimensions,
         .getNativeWindow = &getNativeWindow,
+        .focus = &focus,
+        .show = &show,
     };
 
     fn deinit(ctx: *anyopaque) void {
         const self: *MacosWindow = @ptrCast(@alignCast(ctx));
-        // I'm commenting this out for now, but I'm not sure if I even need it? Idk, we'll see if
-        // this causes memory leaks down the road, but whenever I run it I get this super ugly
-        // "Assertion Failed" error saying that the app's _openWindows property doesn't contain an
-        // identical window??? Idk, probably an easy fix, but it's causing me to lose transparency
-        // with my deinit calls, so I'm commenting it for now
-        // TODO: Figure out wtf I'm doing wrong here
-        // self.native_window.deinit();
+        self.native_window.deinit();
         self.allocator.destroy(self);
     }
 
     fn getDimensions(ctx: *anyopaque) WindowDimensions {
         const self: *MacosWindow = @ptrCast(@alignCast(ctx));
-        return self.dimensions;
+        // TODO: Frame might not be the right thing here lol
+        const window_frame = self.native_window.getFrame();
+        return WindowDimensions{
+            .height = @intFromFloat(window_frame.size.height),
+            .width = @intFromFloat(window_frame.size.width),
+        };
     }
 
     fn getNativeWindow(ctx: *anyopaque) *anyopaque {
         const self: *MacosWindow = @ptrCast(@alignCast(ctx));
         return self.native_window;
+    }
+
+    fn focus(ctx: *anyopaque) void {
+        const self: *MacosWindow = @ptrCast(@alignCast(ctx));
+        const shared_app_instance = apple.app_kit.Application.init() catch @panic("Unable to get sharedApplication in Manatee App Delegate");
+        shared_app_instance.activate();
+        return self.native_window.makeKeyAndOrderFront();
+    }
+
+    fn show(ctx: *anyopaque) void {
+        const self: *MacosWindow = @ptrCast(@alignCast(ctx));
+        return self.native_window.orderFront();
     }
 };
 
@@ -137,7 +143,7 @@ const ManateeWindowDelegate = opaque {
 
     /// Deallocate the instance of the Objective-C ManateeWindowDelegate class
     pub fn deinit(self: *Self) void {
-        return self.dealloc();
+        return self.release();
     }
 
     /// Function executed when the delegate receives a `windowWillClose:` message from the WIndow
