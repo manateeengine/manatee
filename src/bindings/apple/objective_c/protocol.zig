@@ -1,3 +1,5 @@
+const Sel = @import("sel.zig").Sel;
+
 /// An opaque type that represents an Objective-C protocol.
 /// Original: `Protocol`
 /// See: https://developer.apple.com/documentation/objectivec/protocol
@@ -34,7 +36,14 @@ pub const Protocol = opaque {
         return objc_getProtocol(name);
     }
 
-    // TODO: Implement wrapper for objc_copyProtocolList
+    /// Returns an array of all the protocols known to the runtime.
+    /// Original: `objc_copyProtocolList`
+    /// See: https://developer.apple.com/documentation/objectivec/1418549-objc_copyprotocollist
+    pub fn copyProtocolList() []*Self {
+        var protocol_count: u32 = undefined;
+        const protocol_list = objc_copyProtocolList(&protocol_count);
+        return protocol_list[0..protocol_count];
+    }
 
     /// Creates a new protocol instance.
     /// Original: `objc_getProtocol`
@@ -43,19 +52,39 @@ pub const Protocol = opaque {
         return objc_allocateProtocol(name);
     }
 
-    // TODO: Implement wrapper for objc_registerProtocol
-    // TODO: Implement wrapper for protocol_addMethodDescription
+    pub fn registerProtocol(self: *Self) void {
+        return objc_registerProtocol(self);
+    }
+
+    /// Adds a method to a protocol.
+    /// Original: `protocol_addMethodDescription`
+    /// See: https://developer.apple.com/documentation/objectivec/1418709-protocol_addmethoddescription
+    pub fn addMethodDescription(self: *Self, name: *Sel, types: [*:0]const u8, is_required_method: bool, is_instance_method: bool) void {
+        return protocol_addMethodDescription(self, name, types, is_required_method, is_instance_method);
+    }
+
     // TODO: Implement wrapper for protocol_addProtocol
     // TODO: Implement wrapper for protocol_addProperty
-    // TODO: Implement wrapper for protocol_getName
+
+    /// Returns a the name of a protocol.
+    /// Original: `protocol_getName`
+    /// See: https://developer.apple.com/documentation/objectivec/1418826-protocol_getname
+    pub fn getName(self: *Self) [*:0]const u8 {
+        return protocol_getName(self);
+    }
+
     // TODO: Implement wrapper for protocol_isEqual
     // TODO: Implement wrapper for protocol_copyMethodDescriptionList
     // TODO: Implement wrapper for protocol_getMethodDescription
     // TODO: Implement wrapper for protocol_copyPropertyList
     // TODO: Implement wrapper for protocol_getProperty
-    // TODO: Implement wrapper for protocol_copyProtocolList
+    // TODO: Implement wrapper for protocol_copyPropertyList
     // TODO: Implement wrapper for protocol_conformsToProtocol
 };
 
 extern "c" fn objc_allocateProtocol(name: [*:0]const u8) callconv(.c) *Protocol;
+extern "c" fn objc_copyProtocolList(outCount: *u32) callconv(.c) [*]*Protocol;
 extern "c" fn objc_getProtocol(name: [*:0]const u8) callconv(.c) *Protocol;
+extern "c" fn objc_registerProtocol(proto: *Protocol) callconv(.c) void;
+extern "c" fn protocol_addMethodDescription(proto: *Protocol, name: *Sel, types: [*:0]const u8, isRequiredMethod: bool, isInstanceMethod: bool) callconv(.c) void;
+extern "c" fn protocol_getName(proto: *Protocol) callconv(.c) [*:0]const u8;
