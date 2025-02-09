@@ -101,7 +101,12 @@ pub const Class = opaque {
         return class_pair.?;
     }
 
-    // TODO: Implement wrapper for objc_disposeClassPair
+    /// Destroys a class and its associated metaclass.
+    /// Original: `objc_disposeClassPair`
+    /// See: https://developer.apple.com/documentation/objectivec/1418912-objc_disposeclasspair
+    pub fn disposeClassPair(self: *Self) void {
+        return objc_disposeClassPair(self);
+    }
 
     /// Creates a new class and metaclass.
     /// Original: `objc_allocateClassPair`
@@ -110,7 +115,12 @@ pub const Class = opaque {
         return objc_registerClassPair(self);
     }
 
-    // TODO: Implement wrapper for objc_duplicateClass
+    /// Used by Foundation's Key-Value Observing.
+    /// Original: `objc_duplicateClass`
+    /// See: https://developer.apple.com/documentation/objectivec/1418645-objc_duplicateclass
+    pub fn duplicateClass(self: *Self, name: [*:0]const u8, extra_bytes: ?usize) *Self {
+        return objc_duplicateClass(self, name, extra_bytes);
+    }
 
     // Methods defined under the Objective-C runtime's "Instantiating Classes" section
 
@@ -120,8 +130,22 @@ pub const Class = opaque {
     // Methods defined under the Objective-C runtime's "Obtaining Class Definitions" section
 
     // TODO: Implement wrapper for objc_getClassList
-    // TODO: Implement wrapper for objc_copyClassList
-    // TODO: Implement wrapper for objc_lookUpClass
+
+    /// Creates and returns a list of pointers to all registered class definitions.
+    /// Original: `objc_copyClassList`
+    /// See: https://developer.apple.com/documentation/objectivec/1418762-objc_copyclasslist
+    pub fn copyClassList() []*Self {
+        var class_count: u32 = undefined;
+        const class_list = objc_copyClassList(&class_count);
+        return class_list[0..class_count];
+    }
+
+    /// Returns the class definition of a specified class.
+    /// Original: `objc_lookUpClass`
+    /// See: https://developer.apple.com/documentation/objectivec/1418760-objc_lookupclass
+    pub fn lookUpClass(name: [*:0]const u8) ?*Self {
+        return objc_lookUpClass(name);
+    }
 
     /// Returns the class definition of a specified class.
     /// Original: `objc_getClass`
@@ -130,28 +154,29 @@ pub const Class = opaque {
         return objc_getClass(name);
     }
 
-    // TODO: Implement wrapper for objc_getRequiredClass
-    // TODO: Implement wrapper for objc_getMetaClass
-};
+    /// Returns the class definition of a specified class.
+    /// Original: `objc_getRequiredClass`
+    pub fn getRequiredClass(name: [*:0]const u8) *Self {
+        return objc_getRequiredClass(name);
+    }
 
-// /// Returns an Objective-C runtime type encoding string based off of the provided Zig function
-// /// See: https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html
-// pub fn createMethodEncoding(comptime InputType: type) ![*:0]const u8 {
-//     // Note: This is ABSOLUTELY an incomplete implementation, I just needed this working enough to
-//     // pass a boolean returning function to a protocol
-//     const encoding = switch(InputType) {
-//         bool => "B",
-//         // If the InputType isn't a primitive, let's enumerate over its type info
-//         else => switch (@typeInfo(InputType)) {
-//             ."@fn" =>
-//             else => @compileError("Cannot Create Objective-C Type Encoding for Type: " ++ @typeName(InputType)),
-//         }
-//     };
-// }
+    /// Returns the metaclass definition of a specified class.
+    /// Original: `objc_getMetaClass`
+    /// See: https://developer.apple.com/documentation/objectivec/1418721-objc_getmetaclass
+    pub fn getMetaClass(name: [*:0]const u8) ?*Self {
+        return objc_getMetaClass(name);
+    }
+};
 
 extern "c" fn class_addMethod(cls: *Class, sel: *Sel, imp: *const fn () callconv(.c) void, types: [*:0]const u8) callconv(.c) bool;
 extern "c" fn class_addProtocol(cls: *Class, protocol: *Protocol) bool;
 extern "c" fn class_getName(cls: *Class) callconv(.c) [*:0]const u8;
 extern "c" fn objc_allocateClassPair(superclass: ?*Class, name: [*:0]const u8, extraBytes: usize) callconv(.c) ?*Class;
+extern "c" fn objc_copyClassList(outCount: *u32) callconv(.c) [*]*Class;
+extern "c" fn objc_disposeClassPair(class: *Class) callconv(.c) void;
+extern "c" fn objc_duplicateClass(class: *Class, name: [*:0]const u8, extraBytes: usize) callconv(.c) *Class;
 extern "c" fn objc_getClass(name: [*:0]const u8) callconv(.c) ?*Class;
+extern "c" fn objc_getMetaClass(name: [*:0]const u8) callconv(.c) ?*Class;
+extern "c" fn objc_getRequiredClass(name: [*:0]const u8) callconv(.c) ?*Class;
+extern "c" fn objc_lookUpClass(name: [*:0]const u8) callconv(.c) ?*Class;
 extern "c" fn objc_registerClassPair(class: *Class) callconv(.c) void;
