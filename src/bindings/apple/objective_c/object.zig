@@ -160,9 +160,6 @@ pub fn ObjectMixin(comptime Self: type) type {
 /// `NSObject` protocol, and is only kept separate from the actual `Object` mixin for semantics.
 /// The following methods within the protocol have been marked as "Obsolete" in Apple's docs, so
 /// I opted not to implement them:
-/// * retain
-/// * release
-/// * autorelease
 /// * autoreleaseCount
 /// * zone
 pub fn ObjectProtocolMixin(comptime Self: type) type {
