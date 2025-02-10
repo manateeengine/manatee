@@ -27,11 +27,6 @@ pub const Date = opaque {
         return try Self.distantFuture("NSDate");
     }
 
-    /// TODO: Figure out how I want to document manatee-specific init functions
-    pub fn initDistantPast() !*Self {
-        return try Self.distantPast("NSDate");
-    }
-
     /// TODO: Figure out how I want to document manatee-specific deinit functions
     pub fn deinit(self: *Self) void {
         return self.release();
@@ -47,20 +42,12 @@ pub fn DateMixin(comptime Self: type) type {
         const inherited_methods = ObjectMixin(Self);
         pub usingnamespace inherited_methods;
 
-        /// A date object representing a date in the distant future.
+        /// A date object representing a date in the distant past.
         /// Original: NSDate.distantFuture`
         /// See: https://developer.apple.com/documentation/foundation/nsdate/1415385-distantfuture
         pub fn distantFuture(class_name: [*:0]const u8) !*Self {
             const class = try Class.init(class_name);
             return msgSend(class, *Self, Sel.init("distantFuture"), .{});
-        }
-
-        /// A date object representing a date in the distant past.
-        /// Original: NSDate.distantPast`
-        /// See: https://developer.apple.com/documentation/foundation/nsdate/1418197-distantpast
-        pub fn distantPast(class_name: [*:0]const u8) !*Self {
-            const class = try Class.init(class_name);
-            return msgSend(class, *Self, Sel.init("distantPast"), .{});
         }
     };
 }

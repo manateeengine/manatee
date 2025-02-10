@@ -4,13 +4,9 @@
 pub const Point = extern struct {
     /// The x-coordinate of the point.
     /// See: https://developer.apple.com/documentation/corefoundation/cgpoint/1456040-x
-    /// Note: In the Core Graphics Framework, this value is of type `CGFloat`, which is equal to
-    /// C's `double` type, which is equal to Zig's `f64` type
     x: f64,
     /// The y-coordinate of the point.
     /// See: https://developer.apple.com/documentation/corefoundation/cgpoint/1454718-y
-    /// Note: In the Core Graphics Framework, this value is of type `CGFloat`, which is equal to
-    /// C's `double` type, which is equal to Zig's `f64` type
     y: f64,
 };
 
@@ -32,12 +28,8 @@ pub const Rect = extern struct {
 pub const Size = extern struct {
     /// A width value.
     /// See: https://developer.apple.com/documentation/corefoundation/cgsize/1454308-width
-    /// Note: In the Core Graphics Framework, this value is of type `CGFloat`, which is equal to
-    /// C's `double` type, which is equal to Zig's `f64` type
     width: f64,
     /// A height value.
     /// See: https://developer.apple.com/documentation/corefoundation/cgsize/1455076-height
-    /// Note: In the Core Graphics Framework, this value is of type `CGFloat`, which is equal to
-    /// C's `double` type, which is equal to Zig's `f64` type
     height: f64,
 };

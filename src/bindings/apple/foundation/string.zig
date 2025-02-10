@@ -1,11 +1,6 @@
-// pub fn nsString(str: [*:0]const u8) objc.Object {
-//     const NSString = objc.getClass("NSString").?;
-//     const object = NSString.msgSend(objc.Object, "alloc", .{})
-//         .msgSend(objc.Object, "initWithUTF8String:", .{str});
-//     return object;
-// }
 const objective_c = @import("../objective_c.zig");
 
+const Class = objective_c.Class;
 const ObjectMixin = objective_c.object.ObjectMixin;
 const Sel = objective_c.Sel;
 const msgSend = objective_c.msgSend;
@@ -44,7 +39,7 @@ pub fn StringMixin(comptime Self: type) type {
         /// UTF8-encoded bytes.
         /// Original: `NSString.initWithUTF8String:`
         /// See: https://developer.apple.com/documentation/foundation/nsstring/1412128-initwithutf8string
-        pub fn initWithUtf8String(self: *Self, null_terminated_c_string: [*:0]const u8) *Self {
+        pub fn initWithUtf8String(self: *Self, null_terminated_c_string: [*:0]const u8) !*Self {
             return msgSend(self, *Self, Sel.init("initWithUTF8String:"), .{null_terminated_c_string});
         }
     };
