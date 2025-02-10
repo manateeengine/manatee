@@ -30,7 +30,6 @@ pub const Game = struct {
     main_window: system.window.Window,
 
     pub fn init(allocator: std.mem.Allocator, config: GameConfig) !Game {
-        std.debug.print("START game.init\n", .{});
         // Create an app for the current platform
         const BaseApp = system.app.getAppInterfaceStruct();
         var base_app = try allocator.create(BaseApp);
@@ -67,7 +66,6 @@ pub const Game = struct {
         // const gpu = base_gpu.gpu();
         // errdefer gpu.deinit();
 
-        std.debug.print("END   game.init\n", .{});
         return Game{
             .allocator = allocator,
             .app = app,
@@ -84,14 +82,23 @@ pub const Game = struct {
         // self.app.setMainWindow(&self.main_window);
 
         // Start the application event loop
-        try self.app.run();
+        while (true) {
+            const next_event = try self.app.getNextEvent();
+            if (next_event.event_type != .unknown) {
+                std.debug.print("EVENT: {}\n", .{next_event.event_type});
+            }
+            switch (next_event.event_type) {
+                .exit => {
+                    break;
+                },
+                else => try self.app.processEvent(next_event),
+            }
+        }
     }
 
-    pub fn deinit(
-        self: *Game,
-    ) void {
+    pub fn deinit(self: *Game) void {
         // self.gpu.deinit();
-        // self.main_window.deinit();
+        self.main_window.deinit();
         self.app.deinit();
         self.* = undefined;
     }

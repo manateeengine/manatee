@@ -101,12 +101,42 @@ pub const EventType = enum(u64) {
     unknown,
 };
 
+/// Subtypes for various types of events.
+/// Original: `NSEventSubtype`
+/// See: https://developer.apple.com/documentation/appkit/nsevent/eventsubtype
+pub const EventSubType = enum(u64) {
+    window_exposed_or_mouse_event = 0,
+    application_activated_or_power_off_or_tablet_point = 1,
+    application_deactivated_or_tablet_proximity = 2,
+    touch = 3,
+    window_moved = 4,
+    unknown_event_5 = 5,
+    unknown_event_6 = 6,
+    unknown_event_7 = 7,
+    screen_changed = 8,
+    unknown,
+};
+
 /// A Manatee Binding Mixin for AppKit's NSEvent class and its instances
 /// For more information on the mixin pattern, see `bindings/README.md`
 pub fn EventMixin(comptime Self: type) type {
     return struct {
         const inherited_methods = ObjectMixin(Self);
         pub usingnamespace inherited_methods;
+
+        /// Gets the event’s type.
+        /// Original: `NSEvent.type`
+        /// See: https://developer.apple.com/documentation/appkit/nsevent/type
+        pub fn getType(self: *Self) EventType {
+            return msgSend(self, EventType, Sel.init("type"), .{});
+        }
+
+        /// Gets the event’s subtype.
+        /// Original: `NSEvent.subtype`
+        /// See: https://developer.apple.com/documentation/appkit/nsevent/subtype
+        pub fn getSubType(self: *Self) EventSubType {
+            return msgSend(self, EventSubType, Sel.init("subtype"), .{});
+        }
 
         pub fn otherEventWithTypeLocationModifierFlagsTimestampWindowNumberContextSubtypeData1Data2(class_name: [*:0]const u8, event_type: EventType, location: Point, flags: EventModifierFlags, time: f64, window_num: i32, unused_pass_nil: ?*anyopaque, sub_type: i16, d1: u64, d2: u64) !*Self {
             const class = Class.init(class_name) catch @panic("Unable to allocate class NSEvent");
