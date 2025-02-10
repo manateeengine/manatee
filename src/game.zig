@@ -30,6 +30,7 @@ pub const Game = struct {
     main_window: system.window.Window,
 
     pub fn init(allocator: std.mem.Allocator, config: GameConfig) !Game {
+        std.debug.print("START game.init\n", .{});
         // Create an app for the current platform
         const BaseApp = system.app.getAppInterfaceStruct();
         var base_app = try allocator.create(BaseApp);
@@ -48,7 +49,7 @@ pub const Game = struct {
 
         {
             errdefer allocator.destroy(base_window);
-            base_window.* = try BaseWindow.init(allocator, &app, .{ .title = config.title });
+            base_window.* = try BaseWindow.init(allocator, .{ .title = config.title });
         }
 
         var main_window = base_window.window();
@@ -66,6 +67,7 @@ pub const Game = struct {
         // const gpu = base_gpu.gpu();
         // errdefer gpu.deinit();
 
+        std.debug.print("END   game.init\n", .{});
         return Game{
             .allocator = allocator,
             .app = app,
@@ -79,7 +81,7 @@ pub const Game = struct {
     pub fn run(self: *Game) !void {
         // Set the newly created window as the app's main window. This is required to start the
         // event loop in MacOS environments, and unused everywhere else
-        self.app.setMainWindow(&self.main_window);
+        // self.app.setMainWindow(&self.main_window);
 
         // Start the application event loop
         try self.app.run();
@@ -89,7 +91,7 @@ pub const Game = struct {
         self: *Game,
     ) void {
         // self.gpu.deinit();
-        self.main_window.deinit();
+        // self.main_window.deinit();
         self.app.deinit();
         self.* = undefined;
     }
