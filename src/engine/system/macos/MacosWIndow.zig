@@ -1,17 +1,19 @@
 //! A Manatee Window that is intended to be used by applications targeting MacOS.
 
-const manatee = @import("manatee");
 const std = @import("std");
+
+const apple = @import("../../bindings/apple.zig");
+const system = @import("../../system.zig");
 
 const Self = @This();
 
 allocator: std.mem.Allocator,
-native_window: *manatee.bindings.apple.app_kit.Window,
+native_window: *apple.app_kit.Window,
 
-pub fn init(allocator: std.mem.Allocator, config: manatee.system.Window.WindowConfig) !Self {
+pub fn init(allocator: std.mem.Allocator, config: system.Window.Config) !Self {
     _ = config;
 
-    const native_window = try manatee.bindings.apple.app_kit.Window.init(
+    const native_window = try apple.app_kit.Window.init(
         .{ .origin = .{ .x = 0, .y = 0 }, .size = .{ .height = 600, .width = 800 } },
         .{ .titled_enabled = true, .closable_enabled = true, .miniaturizable_enabled = true, .resizable_enabled = true },
         .buffered,
@@ -26,19 +28,17 @@ pub fn init(allocator: std.mem.Allocator, config: manatee.system.Window.WindowCo
     };
 }
 
-pub fn window(self: *Self) manatee.system.Window {
-    return manatee.system.Window{
+pub fn window(self: *Self) system.Window {
+    return system.Window{
         .ptr = @ptrCast(self),
         .vtable = &vtable,
     };
 }
 
-const vtable = manatee.system.Window.VTable{
+const vtable = system.Window.VTable{
     .deinit = &deinit,
-    .focus = &focus,
     .getDimensions = &getDimensions,
     .getNativeWindow = &getNativeWindow,
-    .show = &show,
 };
 
 fn deinit(ctx: *anyopaque) void {
@@ -46,26 +46,14 @@ fn deinit(ctx: *anyopaque) void {
     self.native_window.deinit();
 }
 
-fn focus(ctx: *anyopaque) void {
+fn getDimensions(ctx: *anyopaque) system.Window.Dimensions {
     const self: *Self = @ptrCast(@alignCast(ctx));
     // TODO: Reimplement
     _ = self;
-}
-
-fn getDimensions(ctx: *anyopaque) manatee.system.Window.Dimensions {
-    const self: *Self = @ptrCast(@alignCast(ctx));
-    // TODO: Reimplement
-    _ = self;
-    return manatee.system.Window.Dimensions{ .height = 0, .width = 0 };
+    return system.Window.Dimensions{ .height = 0, .width = 0 };
 }
 
 fn getNativeWindow(ctx: *anyopaque) *anyopaque {
     const self: *Self = @ptrCast(@alignCast(ctx));
     return self.native_window;
-}
-
-fn show(ctx: *anyopaque) void {
-    const self: *Self = @ptrCast(@alignCast(ctx));
-    // TODO: Reimplement
-    _ = self;
 }

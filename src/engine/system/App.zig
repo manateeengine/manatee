@@ -21,27 +21,15 @@ pub fn getNativeApp(self: Self) *anyopaque {
     return self.vtable.getNativeApp(self.ptr);
 }
 
-/// Gets the next AppEvent.
-///
-/// This should be called at the beginning of your application's main loop.
-pub fn getNextEvent(self: Self) !AppEvent {
-    return try self.vtable.getNextEvent(self.ptr);
-}
-
-/// Handles any required system processing for the provided AppEvent.
-///
-/// This should be called at the end of your application's main loop, after any bespoke
-/// processing has been done.
-pub fn processEvent(self: Self, event: AppEvent) !void {
-    return try self.vtable.processEvent(self.ptr, event);
+pub fn run(self: Self, event: AppEvent) !void {
+    return try self.vtable.run(self.ptr, event);
 }
 
 /// A virtual method table linking the implementation back to the original interface.
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque) void,
     getNativeApp: *const fn (ctx: *anyopaque) *anyopaque,
-    getNextEvent: *const fn (ctx: *anyopaque) anyerror!AppEvent,
-    processEvent: *const fn (ctx: *anyopaque, event: AppEvent) anyerror!void,
+    run: *const fn (ctx: *anyopaque) anyerror!void,
 };
 
 /// A Manatee application event.

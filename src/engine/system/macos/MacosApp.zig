@@ -1,40 +1,51 @@
 //! A Manatee App that is intended to be used by applications targeting MacOS.
 
-const manatee = @import("manatee");
 const std = @import("std");
+
+const apple = @import("../../bindings/apple.zig");
+const system = @import("../../system.zig");
+
+const ManateeApplicationDelegate = @import("ManateeApplicationDelegate.zig");
 
 const Self = @This();
 
 allocator: std.mem.Allocator,
-main_window: ?*manatee.system.Window = null,
-native_app: *manatee.bindings.win32.wnd_msg.Instance,
+is_setup_complete: bool = false,
+native_app: *apple.app_kit.Application,
+native_app_delegate: *ManateeApplicationDelegate,
 
 pub fn init(allocator: std.mem.Allocator) !Self {
-    const instance = try manatee.bindings.win32.wnd_msg.Instance.init(null);
+    const native_app = try apple.app_kit.Application.init();
+    const native_app_delegate = try ManateeApplicationDelegate.init();
+
+    try native_app.setActivationPolicy(.regular);
+    native_app.activateIgnoringOtherApps(true);
+    try native_app.setDelegate(native_app_delegate);
 
     return Self{
         .allocator = allocator,
-        .native_app = instance,
+        .native_app = native_app,
+        .native_app_delegate = native_app_delegate,
     };
 }
 
-pub fn app(self: *Self) manatee.system.App {
-    return manatee.system.App{
+pub fn app(self: *Self) system.App {
+    return system.App{
         .ptr = @ptrCast(self),
         .vtable = &vtable,
     };
 }
 
-const vtable = manatee.system.App.VTable{
+const vtable = system.App.VTable{
     .deinit = &deinit,
     .getNativeApp = &getNativeApp,
     .run = &run,
-    .setMainWindow = &setMainWindow,
 };
 
 fn deinit(ctx: *anyopaque) void {
     const self: *Self = @ptrCast(@alignCast(ctx));
-    self.allocator.destroy(self);
+    self.native_app_delegate.deinit();
+    self.native_app.deinit();
 }
 
 fn getNativeApp(ctx: *anyopaque) *anyopaque {
@@ -44,19 +55,6 @@ fn getNativeApp(ctx: *anyopaque) *anyopaque {
 
 fn run(ctx: *anyopaque) !void {
     const self: *Self = @ptrCast(@alignCast(ctx));
-    _ = self; // I'll probably need this at some point lol
-    var msg: manatee.bindings.win32.wnd_msg.Message = undefined;
-    while (msg.getMessageW(null, 0, 0)) {
-        _ = msg.translateMessage();
-        _ = msg.dispatchMessageW();
-    }
-}
-
-fn setMainWindow(ctx: *anyopaque, window: ?*manatee.system.Window) void {
-    const self: *Self = @ptrCast(@alignCast(ctx));
-    if (window != null) {
-        window.?.show();
-        window.?.focus();
-    }
-    self.main_window = window;
+    _ = self;
+    // Ugh todo
 }

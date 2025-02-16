@@ -1,16 +1,18 @@
 //! A Manatee App that is intended to be used by applications targeting Windows.
 
-const manatee = @import("manatee");
 const std = @import("std");
+
+const win32 = @import("../../bindings/win32.zig");
+const system = @import("../../system.zig");
 
 const Self = @This();
 
 allocator: std.mem.Allocator,
-main_window: ?*manatee.system.Window = null,
-native_app: *manatee.bindings.win32.wnd_msg.Instance,
+main_window: ?*system.Window = null,
+native_app: *win32.wnd_msg.Instance,
 
 pub fn init(allocator: std.mem.Allocator) !Self {
-    const instance = try manatee.bindings.win32.wnd_msg.Instance.init(null);
+    const instance = try win32.wnd_msg.Instance.init(null);
 
     return Self{
         .allocator = allocator,
@@ -18,14 +20,14 @@ pub fn init(allocator: std.mem.Allocator) !Self {
     };
 }
 
-pub fn app(self: *Self) manatee.system.App {
-    return manatee.system.App{
+pub fn app(self: *Self) system.App {
+    return system.App{
         .ptr = @ptrCast(self),
         .vtable = &vtable,
     };
 }
 
-const vtable = manatee.system.App.VTable{
+const vtable = system.App.VTable{
     .deinit = &deinit,
     .getNativeApp = &getNativeApp,
     .run = &run,
@@ -45,14 +47,14 @@ fn getNativeApp(ctx: *anyopaque) *anyopaque {
 fn run(ctx: *anyopaque) !void {
     const self: *Self = @ptrCast(@alignCast(ctx));
     _ = self; // I'll probably need this at some point lol
-    var msg: manatee.bindings.win32.wnd_msg.Message = undefined;
+    var msg: win32.wnd_msg.Message = undefined;
     while (msg.getMessageW(null, 0, 0)) {
         _ = msg.translateMessage();
         _ = msg.dispatchMessageW();
     }
 }
 
-fn setMainWindow(ctx: *anyopaque, window: ?*manatee.system.Window) void {
+fn setMainWindow(ctx: *anyopaque, window: ?*system.Window) void {
     const self: *Self = @ptrCast(@alignCast(ctx));
     if (window != null) {
         window.?.show();

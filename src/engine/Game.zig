@@ -29,8 +29,18 @@ pub fn deinit(self: *Self) void {
 
 /// Starts the Game's main event loop and blocks until loop is terminated.
 pub fn run(self: *Self) !void {
-    _ = self;
-    std.debug.print("TODO: In a followup PR, re-implement the event loop ugh\n", .{});
+    // TODO: Determine if the app should be a part of Game.init() or Game.run(). I lean towards
+    // putting it here so that we don't have to create the struct with an allocator, but then that
+    // allows the app context to only be touched within the running game. Maybe that's fine?
+    var base_app = try getAppForOs().init(self.allocator);
+    const app = base_app.app();
+    defer app.deinit();
+
+    var base_window = try getWindowForOs().init(self.allocator, .{ .title = self.config.title });
+    const window = base_window.window();
+    defer window.deinit();
+
+    std.debug.print("TODO: Build Main Loop\n", .{});
 }
 
 /// Compile-time configuration options for your Manatee Game.
@@ -48,10 +58,10 @@ pub const Config = struct {
 ///
 /// This function will throw a `@compileError` if an App implementation does not exist for the
 /// targeted OS.
-pub fn getAppInterfaceStruct() type {
+pub fn getAppForOs() type {
     const base_app = switch (builtin.os.tag) {
-        .macos => @import("system/macos/MacosApp.zig").MacosApp,
-        .windows => @import("system/win32/Win32App.zig").Win32App,
+        .macos => @import("system/macos/MacosApp.zig"),
+        .windows => @import("system/win32/Win32App.zig"),
         else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
     };
 
@@ -63,10 +73,10 @@ pub fn getAppInterfaceStruct() type {
 ///
 /// This function will throw a `@compileError` if a Window implementation does not exist for the
 /// targeted OS.
-pub fn getWindowInterfaceStruct() type {
+pub fn getWindowForOs() type {
     const base_app = switch (builtin.os.tag) {
-        .macos => @import("system/macos/MacosWindow.zig").MacosWindow,
-        .windows => @import("system/win32/Win32Window.zig").Win32Window,
+        .macos => @import("system/macos/MacosWindow.zig"),
+        .windows => @import("system/win32/Win32Window.zig"),
         else => @compileError(std.fmt.comptimePrint("Unsupported OS: {}", .{builtin.os.tag})),
     };
 

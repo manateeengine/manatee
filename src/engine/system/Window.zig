@@ -39,7 +39,7 @@ pub fn getDimensions(self: Self) Dimensions {
 /// Configuration for an application Window in your Manatee game.
 pub const Config = struct {
     height: u32 = 600,
-    title: []const u8,
+    title: [*:0]const u8,
     width: u32 = 800,
 };
 
