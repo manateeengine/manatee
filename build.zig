@@ -14,4 +14,10 @@ pub fn build(b: *std.Build) !void {
 
     build_context.linkCheckedStep(&editor_exe);
     build_context.linkCheckedStep(&engine_lib);
+
+    // Currently this generates docs only for the editor exe. This should probably be for the lib
+    // instead, but I don't know enough about writing those to be comfortable using that, so I'm
+    // settling on using the exe until I know better!
+    _ = manatee_build.ManateeEngineDocs.init(&build_config, &editor_exe);
+    _ = manatee_build.ManateeEngineTests.init(&build_config);
 }

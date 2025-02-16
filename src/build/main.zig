@@ -14,5 +14,7 @@ pub const BuildConfig = @import("BuildConfig.zig");
 pub const BuildContext = @import("BuildContext.zig");
 pub const CheckedStep = @import("CheckedStep.zig");
 pub const ManateeEditorExe = @import("ManateeEditorExe.zig");
+pub const ManateeEngineDocs = @import("ManateeEngineDocs.zig");
 pub const ManateeEngineLib = @import("ManateeEngineLib.zig");
 pub const ManateeEngineModule = @import("ManateeEngineModule.zig");
+pub const ManateeEngineTests = @import("ManateeEngineTests.zig");

@@ -20,8 +20,6 @@ config: *const BuildConfig,
 engine_module: *const ManateeEngineModule,
 /// A Zig Build Step used to run the Manatee editor.
 run_step: *std.Build.Step,
-/// A Zig Build Step used to run Manatee's unit tests.
-test_step: *std.Build.Step,
 
 /// Creates a `BuildContext` with the specified `BuildConfig` pointer.
 pub fn init(config: *const BuildConfig, engine_module: *const ManateeEngineModule) Self {
@@ -35,25 +33,11 @@ pub fn init(config: *const BuildConfig, engine_module: *const ManateeEngineModul
         "Runs the Manatee editor",
     );
 
-    const tests = config.b.addTest(.{
-        .root_source_file = config.b.path("src/main_module.zig"),
-        .target = config.target,
-        .optimize = config.optimize,
-    });
-
-    const test_cmd = config.b.addRunArtifact(tests);
-    const test_step = config.b.step(
-        "test",
-        "Runs Manatee's Test Suite",
-    );
-    test_step.dependOn(&test_cmd.step);
-
     return Self{
         .check_step = check_step,
         .config = config,
         .engine_module = engine_module,
         .run_step = run_step,
-        .test_step = test_step,
     };
 }
 
