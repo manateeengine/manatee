@@ -1,4 +1,3 @@
 //! The Manatee Engine Module
 
-pub const game = @import("game.zig");
-pub const Game = game.Game;
+pub const Game = @import("Game.zig");
