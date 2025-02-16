@@ -7,17 +7,17 @@ const Self = @This();
 
 /// Creates a `CheckedStep` for the Manatee Engine Lib with the specified `BuildConfig` pointer.
 pub fn init(config: *const BuildConfig) CheckedStep {
-    const step_name: []const u8 = "manatee-editor";
+    const step_name: []const u8 = "manatee";
     const step_root_source_file = config.b.path("src/main_lib.zig");
 
-    const step = config.b.addExecutable(.{
+    const step = config.b.addStaticLibrary(.{
         .name = step_name,
         .root_source_file = step_root_source_file,
         .target = config.target,
         .optimize = config.optimize,
     });
 
-    const step_check = config.b.addExecutable(.{
+    const step_check = config.b.addStaticLibrary(.{
         .name = step_name,
         .root_source_file = step_root_source_file,
         .target = config.target,

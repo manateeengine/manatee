@@ -10,6 +10,8 @@ pub fn build(b: *std.Build) !void {
     var build_context = manatee_build.BuildContext.init(&build_config, &engine_module);
 
     const editor_exe = manatee_build.ManateeEditorExe.init(&build_config);
+    const engine_lib = manatee_build.ManateeEngineLib.init(&build_config);
 
     build_context.linkCheckedStep(&editor_exe);
+    build_context.linkCheckedStep(&engine_lib);
 }
