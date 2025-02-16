@@ -14,13 +14,12 @@ projects, and observes the following directory structure:
 ├── .github - GitHub Configuration for CI and PR Templates
 ├── .vscode - Editor Configuration for Visual Studio Code
 ├── src/
-│   ├── modules/
-│   │   ├── build - The Manatee Build module
-│   │   ├── editor - The Manatee Editor module
-│   │   └── engine - The Manatee Engine module
-│   ├── main.zig - The main entrypoint for the Manatee editor
+│   ├── build - The Manatee Build module
+│   ├── editor - The Manatee Editor module
+│   ├── engine - The Manatee Engine module
+│   ├── main_module.zig - The main entrypoint for the Manatee engine Zig module
 │   ├── main_lib.zig - The main entrypoint for Manatee's C lib
-│   └── main_module.zig - The main entrypoint for the Manatee engine Zig module
+│   └── main.zig - The main entrypoint for the Manatee editor
 ├── build.zig - Zig Build File
 ├── build.zig.zon - Zig Package Manager Config
 ├── LICENSE - Manatee's License

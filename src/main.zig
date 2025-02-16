@@ -1,3 +1,3 @@
 //! The Manatee Editor
 
-pub const main = @import("modules/editor/main.zig").main;
+pub const main = @import("editor/main.zig").main;

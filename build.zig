@@ -1,7 +1,7 @@
 const builtin = @import("builtin");
 const std = @import("std");
 
-const manatee_build = @import("src/modules/build/main.zig");
+const manatee_build = @import("src/build/main.zig");
 
 pub fn build(b: *std.Build) !void {
     // Setup Config and Manatee Zig Module
